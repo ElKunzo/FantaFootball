@@ -31,9 +31,9 @@ module Downloader =
                 return { t with Players = playerCollection.Players }
         }
 
-    let downloadTeamDataAsync (seasonId:int) = 
+    let downloadTeamDataAsync baseUrl = 
         async {
-            let url = Constants.competitionUrlTemplate + "/teams"
+            let url = baseUrl + "/teams"
             let! result = downloadAsync url
             
             match result with
@@ -46,9 +46,9 @@ module Downloader =
                 return (Some output)
         }
 
-    let downloadFixtureDataAsync (seasonId:int) = 
+    let downloadFixtureDataAsync baseUrl = 
         async {
-            let url = Constants.competitionUrlTemplate + "/fixtures"
+            let url = baseUrl + "/fixtures"
             let! result = downloadAsync url 
 
             match result with 
@@ -56,9 +56,9 @@ module Downloader =
             | Some x -> return (Some (JsonParser.parseSeasonFixtures x))
         }
 
-    let downloadWhoScoredMatchReportAsync (id:int) = 
+    let downloadWhoScoredMatchReportAsync (baseUrl:string) (id:int) = 
         async {
-            let url = String.Format(Constants.matchReportUrlTemplate, id)
+            let url = String.Format(baseUrl, id)
             let! result = downloadAsync url
 
             match result with 

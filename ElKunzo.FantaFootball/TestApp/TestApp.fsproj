@@ -37,39 +37,6 @@
     <DocumentationFile>bin\Release\TestApp.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Numerics" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="TestRunners.fs" />
-    <Compile Include="Program.fs" />
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ElKunzo.FantaFootball.Components\ElKunzo.FantaFootball.Components.fsproj">
-      <Name>ElKunzo.FantaFootball.Components</Name>
-      <Project>{c5d90b1c-5a13-44cc-a1c8-60c1be9d0fed}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\ElKunzo.FantaFootball.DataAccess\ElKunzo.FantaFootball.DataAccess.fsproj">
-      <Name>ElKunzo.FantaFootball.DataAccess</Name>
-      <Project>{5f19ba3b-564f-42f6-af82-c1f502fd15ca}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\ElKunzo.FantaFootball.DataTransferObjects\ElKunzo.FantaFootball.DataTransferObjects.fsproj">
-      <Name>ElKunzo.FantaFootball.DataTransferObjects</Name>
-      <Project>{e8bbf38d-8afa-4b65-b76b-a28ed3d4e791}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
@@ -86,6 +53,46 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="TestRunners.fs" />
+    <Compile Include="Program.fs" />
+    <None Include="App.config" />
+    <Content Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FSharp.Configuration">
+      <HintPath>..\packages\FSharp.Configuration.0.6.2\lib\net40\FSharp.Configuration.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="mscorlib" />
+    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="SharpYaml">
+      <HintPath>..\packages\FSharp.Configuration.0.6.2\lib\net40\SharpYaml.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Numerics" />
+    <ProjectReference Include="..\ElKunzo.FantaFootball.Components\ElKunzo.FantaFootball.Components.fsproj">
+      <Name>ElKunzo.FantaFootball.Components</Name>
+      <Project>{c5d90b1c-5a13-44cc-a1c8-60c1be9d0fed}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\ElKunzo.FantaFootball.DataAccess\ElKunzo.FantaFootball.DataAccess.fsproj">
+      <Name>ElKunzo.FantaFootball.DataAccess</Name>
+      <Project>{5f19ba3b-564f-42f6-af82-c1f502fd15ca}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\ElKunzo.FantaFootball.DataTransferObjects\ElKunzo.FantaFootball.DataTransferObjects.fsproj">
+      <Name>ElKunzo.FantaFootball.DataTransferObjects</Name>
+      <Project>{e8bbf38d-8afa-4b65-b76b-a28ed3d4e791}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

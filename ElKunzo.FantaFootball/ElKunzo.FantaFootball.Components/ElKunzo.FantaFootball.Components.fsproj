@@ -51,7 +51,6 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Constants.fs" />
     <Compile Include="JsonParser.fs" />
     <Compile Include="Mapper.fs" />
     <Compile Include="Downloader.fs" />

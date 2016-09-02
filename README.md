@@ -1,7 +1,7 @@
 # FantaFootball
 I am playing around with F# by doing something half useful: Connecting to the [football-data api](http://football-data.org/), getting the data and writing it into a database (for starters).
 Additionally to that, I want to connect to whoscored.com and grab the match report data in order to be able to get the player performance infos. 
-The whole thing should be done in F#. Possible use? Maybe a fantasy league kinda thing... but hey, who does not love football data!
+The whole thing should be done in F#. Possible use? Maybe a fantasy league kinda thing... but hey, who does not love football data?!
 
 ## ToDo:
 

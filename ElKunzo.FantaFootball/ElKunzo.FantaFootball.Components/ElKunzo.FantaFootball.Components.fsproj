@@ -56,6 +56,7 @@
     <Compile Include="Mapper.fs" />
     <Compile Include="Downloader.fs" />
     <Content Include="packages.config" />
+    <Compile Include="StaticDataCache.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -73,6 +74,11 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ElKunzo.FantaFootball.DataAccess\ElKunzo.FantaFootball.DataAccess.fsproj">
+      <Name>ElKunzo.FantaFootball.DataAccess</Name>
+      <Project>{5f19ba3b-564f-42f6-af82-c1f502fd15ca}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\ElKunzo.FantaFootball.DataTransferObjects\ElKunzo.FantaFootball.DataTransferObjects.fsproj">
       <Name>ElKunzo.FantaFootball.DataTransferObjects</Name>
       <Project>{e8bbf38d-8afa-4b65-b76b-a28ed3d4e791}</Project>

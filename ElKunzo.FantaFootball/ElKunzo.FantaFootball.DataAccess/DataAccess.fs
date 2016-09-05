@@ -25,7 +25,7 @@ module DatabaseDataAccess =
         
         command
 
-    let createTableValuedParameter parameterName item (sqlDataRecordsCreator:'a -> seq<SqlDataRecord>) =
+    let createTableValuedParameter parameterName (sqlDataRecordsCreator:'a -> seq<SqlDataRecord>) item =
         let result = 
             match item with
             | null -> new SqlParameter(parameterName, null)
@@ -61,11 +61,11 @@ module DatabaseDataAccess =
         | ex -> printfn "Something went wrong reading from the DB (%s)" ex.Message; reraise ()
 
     let executeWriteOnlyStoredProcedureAsync connectionString storedProcedureName commandTimeout parameters =
-        try        
+//        try        
             async {
                 use connection = new SqlConnection(connectionString)
                 use command = createSqlCommand storedProcedureName connection commandTimeout parameters
-                do! connection.OpenAsync() |> Async.AwaitTask |> Async.Ignore
+                do! connection.OpenAsync() |> Async.AwaitTask
                 use transaction = connection.BeginTransaction()
                 try
                     command.Transaction <- transaction;
@@ -74,8 +74,9 @@ module DatabaseDataAccess =
                 with
                 | ex -> try
                             transaction.Rollback()
+                            printfn "Somethign happened. (%s)" ex.Message
                         with
                         | ex -> printfn "Could not roll back the transaction. (%s)" ex.Message
             }
-        with
-        | ex -> printfn "Something went wrong writing to the DB. (%s)" ex.Message; reraise ()
+//        with
+//        | ex -> printfn "Something went wrong writing to the DB. (%s)" ex.Message; reraise ()

@@ -29,8 +29,9 @@ module External =
             JerseyNumber : string;
             DateOfBirth : DateTime;
             Nationality : string;
-            ContractUnitl : DateTime;
+            ContractUntil : string;
             MarketValue : string;
+            FootballDataTeamId : int;
         }
 
     type PlayerCollection = {
@@ -48,6 +49,7 @@ module External =
             SquadMarketValue : string;
             CrestUrl : string;
             Players : seq<Player>;
+            FootballDataId : int;
         }
 
     type Competition = {

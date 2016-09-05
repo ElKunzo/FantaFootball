@@ -1,6 +1,6 @@
 ﻿namespace ElKunzo.FantaFootball.TestApp
 
-open System
+open System.Threading
 open FSharp.Configuration
 open ElKunzo.FantaFootball.Components
 open ElKunzo.FantaFootball.DataTransferObjects
@@ -11,64 +11,20 @@ open ElKunzo.FantaFootball.DataTransferObjects.Internal
 module TestRunners = 
     type Settings = AppSettings<"App.config">
 
-    let GetCompetitionTest () = 
-        printfn "Reading Teams form internet:\n"
+    let commandTimeout = Settings.CommandTimeout
+    let databaseConnectionString = Settings.ConnectionStrings.FootballData
 
-        let leagueId = Settings.LeagueId
-        let competitionUrlTemplate = Settings.CompetitionUrlTemplate
-        let baseUrl = String.Format(competitionUrlTemplate.ToString(), leagueId)
+    
+    let StaticDataCacheTest () = 
+        let a = StaticDataCache.TeamDataCache
+        //let b = StaticDataCache.PlayerDataCache
 
-        let competition = (Downloader.downloadTeamDataAsync baseUrl) |> Async.RunSynchronously
-        match competition with 
-        | None -> printfn "Could not download team data."
-        | Some comp -> 
-            comp.Teams
-            |> Seq.toList
-            |> List.map (fun team -> printfn "%A" team)
-            |> ignore
+        while (true) do
+            printfn "Iteration done"
+            let team = a 185
+            match team with | None -> printfn "No team found" | Some x -> printfn "Team with Id %i: %s" 185 x.FullName
+            Thread.Sleep(10000)
 
-        0
-
-
-
-    let DatabaseIOTest () = 
-        printfn "\nWriting dummy data into DB\n"
-
-        let commandTimeout = Settings.CommandTimeout
-        let databaseConnectionString = Settings.ConnectionStrings.FootballData
-
-        let dummyData = [|
-                { Id = 1; ExternalId = 1; Name = "Dummy"; FullName = "Dummy 1"};
-                { Id = 2; ExternalId = 2; Name = "Dummy"; FullName = "Dummy 2"};
-                { Id = 3; ExternalId = 3; Name = "Dummy"; FullName = "Dummy 3"};
-            |]
-        let spParameters = [|
-                (DatabaseDataAccess.createTableValuedParameter "@TeamData" dummyData Mapper.mapTeamStaticDataToSql)
-            |]
-
-        let result = (DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync 
-                        databaseConnectionString 
-                        "usp_TeamData_Update"
-                        (Some commandTimeout)
-                        spParameters
-                     ) |> Async.RunSynchronously 
-
-        printfn "\nReading Teams from Database:\n"
-
-        let result = (DatabaseDataAccess.executeReadOnlyStoredProcedureAsync 
-                        databaseConnectionString 
-                        "usp_TeamData_Get"
-                        (Some commandTimeout)
-                        Mapper.mapTeamStaticDataFromSql
-                        Array.empty) 
-                    |> Async.RunSynchronously 
-
-        result
-        |> Seq.toList 
-        |> List.map (fun team -> printfn "%A" team )
-        |> ignore
-
-        0
 
     let GetMatchReportTest () = 
         printfn "\nRetreiving WhoScored.com match report\n"

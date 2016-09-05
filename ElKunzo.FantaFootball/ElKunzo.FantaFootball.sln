@@ -11,6 +11,21 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ElKunzo.FantaFootball.Compo
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestApp", "TestApp\TestApp.fsproj", "{AF91CE44-A745-4A5C-A436-CE5B3BA0BAC9}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{AEC26EF7-ABFC-41FC-B821-624C13B61135}"
+	ProjectSection(SolutionItems) = preProject
+		Full.sql = Full.sql
+		rol_FantaFootballRole.sql = rol_FantaFootballRole.sql
+		tab_PlayerStaticData.sql = tab_PlayerStaticData.sql
+		tab_Positions.sql = tab_Positions.sql
+		tab_TeamData.sql = tab_TeamData.sql
+		typ_PlayerStaticDataType.sql = typ_PlayerStaticDataType.sql
+		typ_TeamDataType.sql = typ_TeamDataType.sql
+		usp_PlayerStaticData_Get.sql = usp_PlayerStaticData_Get.sql
+		usp_PlayerStaticData_Update.sql = usp_PlayerStaticData_Update.sql
+		usp_TeamData_Get.sql = usp_TeamData_Get.sql
+		usp_TeamData_Update.sql = usp_TeamData_Update.sql
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

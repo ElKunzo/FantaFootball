@@ -31,14 +31,20 @@ module Downloader =
         client
         
     let downloadPlayersAsync (t:Team) = 
+        let teamId = 
+            (t._Links.Self.Href).Split('/') 
+            |> Seq.last
+            |> int
+
         async {
             let url = t._Links.Players.Href
             let! result = downloadAsync url buildFootballDataApiHttpClient
             match result with
-            | None -> return t
+            | None -> return { t with FootballDataId = teamId }
             | Some data -> 
-                let playerCollection = JsonParser.parsePlayerDataJson data
-                return { t with Players = playerCollection.Players }
+                let playerCollection = JsonParser.parsePlayerDataJson data 
+                let players = playerCollection.Players |> Seq.map (fun p -> { p with FootballDataTeamId = teamId })
+                return { t with Players = players; FootballDataId = teamId  }
         }
 
     let downloadTeamDataAsync baseUrl = 

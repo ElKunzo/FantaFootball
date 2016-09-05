@@ -51,6 +51,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="FootballDataApiKey.fs" />
     <Compile Include="JsonParser.fs" />
     <Compile Include="Mapper.fs" />
     <Compile Include="Downloader.fs" />

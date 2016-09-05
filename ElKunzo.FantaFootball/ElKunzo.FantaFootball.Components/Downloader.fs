@@ -4,13 +4,12 @@ open System
 open System.Net.Http
 open ElKunzo.FantaFootball.DataTransferObjects.External
 
-
 module Downloader = 
 
-    let downloadAsync url =
+    let downloadAsync url (clientBuilder:unit -> HttpClient) =
         async {            
             try
-                let client = new HttpClient()
+                let client = clientBuilder ()
                 let uri = new Uri(url)
                 let! response = client.GetAsync(uri) |> Async.AwaitTask
                 do response.EnsureSuccessStatusCode() |> ignore
@@ -19,11 +18,22 @@ module Downloader =
             with
             | ex -> printfn "Something went wrong while downloading: %s" ex.Message; return None
         }
+
+    let buildDefaultHttpClient () = 
+        let client = new HttpClient()
+
+        client
+
+    let buildFootballDataApiHttpClient () = 
+        let client = new HttpClient()
+        client.DefaultRequestHeaders.Add("X-Auth-Token", FootballDataApiKey.key);
+
+        client
         
     let downloadPlayersAsync (t:Team) = 
         async {
             let url = t._Links.Players.Href
-            let! result = downloadAsync(url)
+            let! result = downloadAsync url buildFootballDataApiHttpClient
             match result with
             | None -> return t
             | Some data -> 
@@ -34,7 +44,7 @@ module Downloader =
     let downloadTeamDataAsync baseUrl = 
         async {
             let url = baseUrl + "/teams"
-            let! result = downloadAsync url
+            let! result = downloadAsync url buildFootballDataApiHttpClient
             
             match result with
             | None -> return None 
@@ -49,7 +59,7 @@ module Downloader =
     let downloadFixtureDataAsync baseUrl = 
         async {
             let url = baseUrl + "/fixtures"
-            let! result = downloadAsync url 
+            let! result = downloadAsync url buildFootballDataApiHttpClient
 
             match result with 
             | None -> return None
@@ -59,7 +69,7 @@ module Downloader =
     let downloadWhoScoredMatchReportAsync (baseUrl:string) (id:int) = 
         async {
             let url = String.Format(baseUrl, id)
-            let! result = downloadAsync url
+            let! result = downloadAsync url buildDefaultHttpClient
 
             match result with 
             | None -> return None

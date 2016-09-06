@@ -1,19 +1,24 @@
-﻿namespace ElKunzo.FantaFootball.DataTransferObjects
+﻿namespace ElKunzo.FantaFootball.External
 
 open System
 open System.Collections.Generic
 
-module WhoScoredExternal = 
+module WhoScoredTypes = 
+
     type FormationInfo = {
         JerseyNumber : int;
         FormationSlot : int;
         PlayerId : int;
     }
 
+
+
     type FormationPositions = {
         Vertical : decimal;
         Horizontal : decimal;
     }
+
+
 
     type FormationData = {
         FormationId : int;
@@ -26,15 +31,21 @@ module WhoScoredExternal =
         FormationPositions : seq<FormationPositions>; 
     }
 
+
+
     type IncidentEventType = {
         Value : int;
         DisplayName : string;
     }
 
+
+
     type IncidentEventQualifier = {
         Type : IncidentEventType;
         Value : string;
     }
+
+
 
     type IncidentEvent = {
         Id : float;
@@ -61,6 +72,8 @@ module WhoScoredExternal =
         EndX : float;
         EndY : float;
     }
+
+
 
     type Statistics = {
         MinutesWithStats : seq<int>;
@@ -106,6 +119,8 @@ module WhoScoredExternal =
         Errors : Dictionary<int, float>;
     }
 
+
+
     type PlayerData = {
         PlayerId : int;
         ShirtNo : int;
@@ -126,11 +141,15 @@ module WhoScoredExternal =
         IsHomeTeam : bool;
     }
 
+
+
     type TeamScoreData = {
         Halftime : int;
         Fulltime : int;
         Running : int;
     }
+
+
 
     type TeamData = {
         TeamId : int;
@@ -144,6 +163,8 @@ module WhoScoredExternal =
         AverageAge : float;
         IsHomeTeam : bool;
     }
+
+
 
     type MatchReport = {
         PlayerIdNameDictionary : Dictionary<int, string>;

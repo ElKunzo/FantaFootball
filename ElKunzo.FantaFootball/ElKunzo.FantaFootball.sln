@@ -5,20 +5,21 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ElKunzo.FantaFootball.DataAccess", "ElKunzo.FantaFootball.DataAccess\ElKunzo.FantaFootball.DataAccess.fsproj", "{5F19BA3B-564F-42F6-AF82-C1F502FD15CA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ElKunzo.FantaFootball.DataTransferObjects", "ElKunzo.FantaFootball.DataTransferObjects\ElKunzo.FantaFootball.DataTransferObjects.fsproj", "{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ElKunzo.FantaFootball.Components", "ElKunzo.FantaFootball.Components\ElKunzo.FantaFootball.Components.fsproj", "{C5D90B1C-5A13-44CC-A1C8-60C1BE9D0FED}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestApp", "TestApp\TestApp.fsproj", "{AF91CE44-A745-4A5C-A436-CE5B3BA0BAC9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database Scripts", "Database Scripts", "{085DF3F9-B005-40D5-8FFF-8BB86FA58EFA}"
 	ProjectSection(SolutionItems) = preProject
 		..\Database Scripts\rol_FantaFootballRole.sql = ..\Database Scripts\rol_FantaFootballRole.sql
+		..\Database Scripts\tab_FixtureData.sql = ..\Database Scripts\tab_FixtureData.sql
+		..\Database Scripts\tab_FixtureStatus.sql = ..\Database Scripts\tab_FixtureStatus.sql
 		..\Database Scripts\tab_PlayerStaticData.sql = ..\Database Scripts\tab_PlayerStaticData.sql
 		..\Database Scripts\tab_Positions.sql = ..\Database Scripts\tab_Positions.sql
 		..\Database Scripts\tab_TeamData.sql = ..\Database Scripts\tab_TeamData.sql
+		..\Database Scripts\typ_FixtureDataType.sql = ..\Database Scripts\typ_FixtureDataType.sql
 		..\Database Scripts\typ_PlayerStaticDataType.sql = ..\Database Scripts\typ_PlayerStaticDataType.sql
 		..\Database Scripts\typ_TeamDataType.sql = ..\Database Scripts\typ_TeamDataType.sql
+		..\Database Scripts\usp_FixtureData_Get.sql = ..\Database Scripts\usp_FixtureData_Get.sql
+		..\Database Scripts\usp_FixtureData_Update.sql = ..\Database Scripts\usp_FixtureData_Update.sql
 		..\Database Scripts\usp_PlayerStaticData_Get.sql = ..\Database Scripts\usp_PlayerStaticData_Get.sql
 		..\Database Scripts\usp_PlayerStaticData_Update.sql = ..\Database Scripts\usp_PlayerStaticData_Update.sql
 		..\Database Scripts\usp_TeamData_Get.sql = ..\Database Scripts\usp_TeamData_Get.sql
@@ -30,6 +31,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ElKunzo.FantaFootball", "ElKunzo.FantaFootball\ElKunzo.FantaFootball.fsproj", "{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,18 +43,14 @@ Global
 		{5F19BA3B-564F-42F6-AF82-C1F502FD15CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F19BA3B-564F-42F6-AF82-C1F502FD15CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F19BA3B-564F-42F6-AF82-C1F502FD15CA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C5D90B1C-5A13-44CC-A1C8-60C1BE9D0FED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C5D90B1C-5A13-44CC-A1C8-60C1BE9D0FED}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C5D90B1C-5A13-44CC-A1C8-60C1BE9D0FED}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C5D90B1C-5A13-44CC-A1C8-60C1BE9D0FED}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AF91CE44-A745-4A5C-A436-CE5B3BA0BAC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AF91CE44-A745-4A5C-A436-CE5B3BA0BAC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF91CE44-A745-4A5C-A436-CE5B3BA0BAC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF91CE44-A745-4A5C-A436-CE5B3BA0BAC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8BBF38D-8AFA-4B65-B76B-A28ED3D4E791}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

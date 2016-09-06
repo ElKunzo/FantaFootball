@@ -1,4 +1,4 @@
-﻿namespace ElKunzo.FantaFootball.Components.AssemblyInfo
+﻿namespace ElKunzo.FantaFootball.AssemblyInfo
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,11 +7,11 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("ElKunzo.FantaFootball.Components")>]
+[<assembly: AssemblyTitle("ElKunzo.FantaFootball")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("bwin.party")>]
-[<assembly: AssemblyProduct("ElKunzo.FantaFootball.Components")>]
+[<assembly: AssemblyProduct("ElKunzo.FantaFootball")>]
 [<assembly: AssemblyCopyright("Copyright © bwin.party 2016")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
@@ -22,7 +22,7 @@ open System.Runtime.InteropServices
 [<assembly: ComVisible(false)>]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[<assembly: Guid("c5d90b1c-5a13-44cc-a1c8-60c1be9d0fed")>]
+[<assembly: Guid("e8bbf38d-8afa-4b65-b76b-a28ed3d4e791")>]
 
 // Version information for an assembly consists of the following four values:
 // 

@@ -10,7 +10,11 @@ module DatabaseDataAccess =
 
     let defaultCommandTimeoutInSeconds = 10
 
+
+
     let databaseConnectionString = "Server=tcp:localhost,1433;Integrated Security=SSPI;Database=ElKunzoFantaFootball;Timeout=15;Max Pool Size=500"
+
+
 
     let createSqlCommand storedProcedureName connection parameters =
         let command = new SqlCommand(storedProcedureName, connection)
@@ -21,6 +25,8 @@ module DatabaseDataAccess =
         | _ -> command.Parameters.AddRange(parameters)
         command
 
+
+
     let createTableValuedParameter parameterName (sqlDataRecordsCreator:'a -> seq<SqlDataRecord>) item =
         let result = 
             match item with
@@ -30,16 +36,18 @@ module DatabaseDataAccess =
         result
 
     
-    let rec readRowsAsync (reader:DbDataReader) (results:ResizeArray<_>) mappingFunction = 
-        async {
-            let! readAsyncResult = Async.AwaitTask (reader.ReadAsync ())
-            if readAsyncResult then
-                results.Add (mappingFunction reader)
-                return! readRowsAsync reader results mappingFunction
-            else
-                return results.AsReadOnly() :> IReadOnlyList<_>
-        }
+
+    let rec readRowsAsync (reader:DbDataReader) (results:ResizeArray<_>) mappingFunction = async {
+        let! readAsyncResult = Async.AwaitTask (reader.ReadAsync ())
+        if readAsyncResult then
+            results.Add (mappingFunction reader)
+            return! readRowsAsync reader results mappingFunction
+        else
+            return results.AsReadOnly() :> IReadOnlyList<_>
+    }
     
+
+
     let executeReadOnlyStoredProcedureAsync storedProcedureName readOperation parameters =
         try
             async {
@@ -55,6 +63,8 @@ module DatabaseDataAccess =
         with
         | ex -> printfn "Something went wrong reading from the DB (%s)" ex.Message; reraise ()
 
+
+
     let executeWriteOnlyStoredProcedureAsync storedProcedureName parameters =
         try        
             async {
@@ -67,8 +77,7 @@ module DatabaseDataAccess =
                     let! affectedRows = command.ExecuteNonQueryAsync() |> Async.AwaitTask
                     transaction.Commit()
                 with
-                | ex -> 
-                        transaction.Rollback()
+                | ex -> transaction.Rollback()
                         raise ex
             }
         with

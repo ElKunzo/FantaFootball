@@ -61,6 +61,11 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ElKunzo.FantaFootball\ElKunzo.FantaFootball.fsproj">
+      <Name>ElKunzo.FantaFootball</Name>
+      <Project>{e8bbf38d-8afa-4b65-b76b-a28ed3d4e791}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="FSharp.Configuration">
       <HintPath>..\packages\FSharp.Configuration.0.6.2\lib\net40\FSharp.Configuration.dll</HintPath>
       <Private>True</Private>
@@ -77,19 +82,9 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Numerics" />
-    <ProjectReference Include="..\ElKunzo.FantaFootball.Components\ElKunzo.FantaFootball.Components.fsproj">
-      <Name>ElKunzo.FantaFootball.Components</Name>
-      <Project>{c5d90b1c-5a13-44cc-a1c8-60c1be9d0fed}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\ElKunzo.FantaFootball.DataAccess\ElKunzo.FantaFootball.DataAccess.fsproj">
       <Name>ElKunzo.FantaFootball.DataAccess</Name>
       <Project>{5f19ba3b-564f-42f6-af82-c1f502fd15ca}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\ElKunzo.FantaFootball.DataTransferObjects\ElKunzo.FantaFootball.DataTransferObjects.fsproj">
-      <Name>ElKunzo.FantaFootball.DataTransferObjects</Name>
-      <Project>{e8bbf38d-8afa-4b65-b76b-a28ed3d4e791}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

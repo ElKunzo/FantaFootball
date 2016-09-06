@@ -5,7 +5,8 @@ open ElKunzo.FantaFootball.TestApp.TestRunners
 let main argv = 
 
     StaticDataCacheTest () |> ignore
-    //GetMatchReportTest () |> ignore
+    FixtureDataTest () |> ignore
+    GetMatchReportTest () |> ignore
     
     printfn "Done!"
     let a = Console.ReadLine()

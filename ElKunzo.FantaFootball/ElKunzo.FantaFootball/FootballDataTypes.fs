@@ -1,16 +1,21 @@
-﻿namespace ElKunzo.FantaFootball.DataTransferObjects
+﻿namespace ElKunzo.FantaFootball.External
 
-open System;
+open System
 
-module External = 
+module FootballDataTypes = 
+
     type Link = {
             Href : string
         }
+
+
 
     type CompetitionLinks = {
             Self : Link;
             Competition : Link;
         }
+
+
 
     type TeamLinks = {
             Self : Link;
@@ -18,10 +23,14 @@ module External =
             Players : Link;
         }
 
+
+
     type PlayerLinks = {
         Self : Link;
         Team : Link;
         }
+
+
 
     type Player = {
             Name : string;
@@ -34,13 +43,16 @@ module External =
             FootballDataTeamId : int;
         }
 
+
+
     type PlayerCollection = {
             _Links : PlayerLinks;
             Count : int;
             Players : seq<Player>;
         }
 
-    [<StructuredFormatDisplay("{Code} - {Name}")>]
+
+
     type Team = {
             _Links : TeamLinks;
             Name : string;
@@ -52,11 +64,15 @@ module External =
             FootballDataId : int;
         }
 
+
+
     type Competition = {
             _Links : CompetitionLinks;
             Count : int;
             Teams : seq<Team>;
         }
+
+
 
     type FixtureLinks = {
             Self : Link;
@@ -65,10 +81,14 @@ module External =
             AwayTeam : Link;
         }
 
+
+
     type Result = {
             GoalsHomeTeam : string;
             GoalsAwayTeam : string;
         }
+
+
 
     type Odds = {
             HomeWin : double;
@@ -76,21 +96,28 @@ module External =
             AwayWin : double;
         }
 
+
+
     type Fixture = {
             _Links : FixtureLinks;
             Date : DateTime;
             Status : string;
             MatchDay : int;
-            HomeTeamName : int;
-            AwayTeamName : int;
+            HomeTeamName : string;
+            AwayTeamName : string;
             Result : Result;
             Odds : Odds;
+            FootballDataId : int;
         }
+
+
 
     type SeasonFixturesLinks = {
             Self : Link;
             Competition : Link;
         }
+
+
 
     type SeasonFixtures = { 
             _Links : SeasonFixturesLinks;

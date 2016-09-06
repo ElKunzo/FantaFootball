@@ -1,0 +1,17 @@
+﻿CREATE TABLE tab_FixtureData(
+	fId INT NOT NULL IDENTITY(1,1),
+	fWhoScoredId INT,
+	fFootballDataId INT,
+	frStatusId INT NOT NULL,
+	fKickOffUtc DATETIME,
+	fMatchDay INT,
+	frHomeTeamId INT NOT NULL,
+	frAwayTeamId INT NOT NULL,
+	fHomeScore INT,
+	fAwayScore INT,
+	fLastUpdatedUtc DATETIME,
+	PRIMARY KEY (fId),
+	FOREIGN KEY (frStatusId) REFERENCES tab_FixtureStatus(fId),
+	FOREIGN KEY (frHomeTeamId) REFERENCES tab_TeamData(fId),
+	FOREIGN KEY (frAwayTeamId) REFERENCES tab_TeamData(fId),
+);

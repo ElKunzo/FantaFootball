@@ -253,3 +253,4 @@ paket-files/
 
 # FootballData Api Key file
 ElKunzo.FantaFootball/ElKunzo.FantaFootball.Components/FootballDataApiKey.fs
+ElKunzo.FantaFootball/ElKunzo.FantaFootball/FootballDataApiKey.fs

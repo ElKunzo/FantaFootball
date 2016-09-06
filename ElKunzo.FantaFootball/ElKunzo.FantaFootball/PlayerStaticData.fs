@@ -1,36 +1,41 @@
-﻿namespace ElKunzo.FantaFootball.Components
+﻿namespace ElKunzo.FantaFootball.Internal
 
 open System
 open System.Data
 open System.Data.Common
 open Microsoft.SqlServer.Server
-open ElKunzo.FantaFootball.DataTransferObjects.Internal
-open ElKunzo.FantaFootball.DataTransferObjects.External
 
-module Mapper = 
+open ElKunzo.FantaFootball.External.FootballDataTypes
 
-    let mapTeamStaticDataFromSql (dataReader:DbDataReader) = 
-        let idOrdinal = dataReader.GetOrdinal("fId")
-        let footbalDataIdOrdinal = dataReader.GetOrdinal("fFootballDataId")
-        let whoScoredIdOrdinal = dataReader.GetOrdinal("fWhoScoredId")
-        let nameOrdinal = dataReader.GetOrdinal("fName")
-        let fullNameOrdinal = dataReader.GetOrdinal("fFullName")
-        let codeOrdinal = dataReader.GetOrdinal("fCode")
-        let squadMarketValueOrdinal = dataReader.GetOrdinal("fSquadMarketValue")
-        let crestUrlOrdinal = dataReader.GetOrdinal("fCrestUrl")
+module PlayerStaticData = 
 
-        {
-            Id = dataReader.GetInt32(idOrdinal);
-            FootballDataId = dataReader.GetInt32(footbalDataIdOrdinal);
-            WhoScoredId = dataReader.GetInt32(whoScoredIdOrdinal);
-            Name = dataReader.GetString(nameOrdinal);
-            FullName = dataReader.GetString(fullNameOrdinal);
-            Code = if dataReader.IsDBNull(codeOrdinal) then None else Some (dataReader.GetString(codeOrdinal));
-            SquadMarketValue = if dataReader.IsDBNull(squadMarketValueOrdinal) then None else Some (dataReader.GetInt32(squadMarketValueOrdinal));
-            CrestUrl = if dataReader.IsDBNull(crestUrlOrdinal) then None else Some (dataReader.GetString(crestUrlOrdinal));
-        }
+    type T = {
+        Id : int;
+        WhoScoredId : int;
+        FootballDataTeamId : int;
+        TeamId : int;
+        JerseyNumber : int option;
+        Position : Position;
+        Name : string;
+        FullName : string;
+        DateOfBirth : DateTime option;
+        Nationality : string;
+        ContractUntil : DateTime option;
+        MarketValue : int option;
+    }
 
-    let mapPlayerStaticDataFromSql (dataReader:DbDataReader) = 
+
+
+    type Cache (spName, mappingFunction, refreshInterval) =
+        inherit BaseCacheWithRefreshTimer<T>(spName, mappingFunction, refreshInterval)
+
+        override this.TryGetItem (id) = 
+            if this.IsOutdated() then this.Update()
+            this.PublicData |> Seq.tryFind (fun p -> p.Id = id)
+
+
+
+    let mapFromSqlType (dataReader:DbDataReader) = 
         let idOrdinal = dataReader.GetOrdinal("fId")
         let whoScoredIdOrdinal = dataReader.GetOrdinal("fWhoScoredId")
         let footballDataTeamIdOrdinal = dataReader.GetOrdinal("fFootballDataTeamId")
@@ -59,31 +64,9 @@ module Mapper =
             MarketValue = if dataReader.IsDBNull(marketValueOrdinal) then None else Some (dataReader.GetInt32(marketValueOrdinal));
         }
 
-    let mapTeamStaticDataToSql (teams:seq<TeamStaticData>) = 
-        let metaData = [|
-            new SqlMetaData("Id", SqlDbType.Int);
-            new SqlMetaData("FootballDataId", SqlDbType.Int);
-            new SqlMetaData("WhoScoredId", SqlDbType.Int);
-            new SqlMetaData("Name", SqlDbType.NVarChar, 500L);
-            new SqlMetaData("FullName", SqlDbType.NVarChar, 500L);
-            new SqlMetaData("Code", SqlDbType.NVarChar, 5L);
-            new SqlMetaData("SquadMarketValue", SqlDbType.Int);
-            new SqlMetaData("CrestUrl", SqlDbType.NVarChar, 500L);
-        |]
 
-        let record = new SqlDataRecord(metaData)
-        teams |> Seq.map (fun team ->
-                record.SetInt32(0, team.Id)
-                record.SetInt32(1, team.FootballDataId)
-                record.SetInt32(2, team.WhoScoredId)
-                record.SetString(3, team.Name)
-                record.SetString(4, team.FullName)
-                match team.Code with | Some x -> record.SetString(5,x) | None -> record.SetDBNull(5)
-                match team.SquadMarketValue with | Some x -> record.SetInt32(6, x) | None -> record.SetDBNull(6)
-                match team.CrestUrl with | Some x -> record.SetString(7, x) | None -> record.SetDBNull(7)
-                record)
 
-    let mapPlayerStaticDataToSql (players:seq<PlayerStaticData>) = 
+    let mapToSqlType (players:seq<T>) = 
         let metaData = [|
             new SqlMetaData("Id", SqlDbType.Int);
             new SqlMetaData("WhoScoredId", SqlDbType.Int);
@@ -116,31 +99,8 @@ module Mapper =
                 record)
 
 
-    let mapMarketValue (marketValueAsString:string) = 
-        match marketValueAsString with
-        | null -> None
-        | _ -> let result = marketValueAsString.Split(' ').[0].Replace(",", "")
-               Some (int result)
 
-    let mapNullString input = 
-        match input with
-        | null -> None
-        | _ -> Some input
-
-    let mapExternalTeamStaticDataToInternal (extTeam:Team) = 
-        {
-            Id = -1;
-            FootballDataId = extTeam.FootballDataId;
-            WhoScoredId = -1;
-            Name = extTeam.ShortName;
-            FullName = extTeam.Name;
-            Code = (mapNullString extTeam.Code);
-            SquadMarketValue = (mapMarketValue extTeam.SquadMarketValue);
-            CrestUrl = (mapNullString extTeam.CrestUrl);
-        }
-
-    let mapExternalPlayerStaticDataToInternal teamId (extPlayer:Player) = 
-
+    let mapFromExternal teamId (extPlayer:Player) = 
         let mapPosition positionAsString = 
             printfn "%s" positionAsString
             match positionAsString with
@@ -164,20 +124,18 @@ module Mapper =
             | Some (x:string) -> let data = x.Split('-') |> Array.map (fun a -> int a)
                                  Some (DateTime(data.[0], data.[1], data.[2]))
 
+        {
+            Id = -1;
+            WhoScoredId = -1;
+            FootballDataTeamId = extPlayer.FootballDataTeamId;
+            TeamId = teamId;
+            JerseyNumber = (mapJerseyNumber extPlayer.JerseyNumber);
+            Position = (mapPosition extPlayer.Position);
+            Name = extPlayer.Name;
+            FullName = extPlayer.Name;
+            DateOfBirth = if extPlayer.DateOfBirth = DateTime.MinValue then None else Some extPlayer.DateOfBirth;
+            Nationality = extPlayer.Nationality
+            ContractUntil = mapContractUntil extPlayer.ContractUntil;
+            MarketValue = (mapMarketValue extPlayer.MarketValue);
+        }
 
-        let playerStaticData = {
-                Id = -1;
-                WhoScoredId = -1;
-                FootballDataTeamId = extPlayer.FootballDataTeamId;
-                TeamId = teamId;
-                JerseyNumber = (mapJerseyNumber extPlayer.JerseyNumber);
-                Position = (mapPosition extPlayer.Position);
-                Name = extPlayer.Name;
-                FullName = extPlayer.Name;
-                DateOfBirth = if extPlayer.DateOfBirth = DateTime.MinValue then None else Some extPlayer.DateOfBirth;
-                Nationality = extPlayer.Nationality
-                ContractUntil = mapContractUntil extPlayer.ContractUntil;
-                MarketValue = (mapMarketValue extPlayer.MarketValue);
-            }
-
-        playerStaticData

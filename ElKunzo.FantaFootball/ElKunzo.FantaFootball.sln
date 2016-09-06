@@ -11,19 +11,23 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ElKunzo.FantaFootball.Compo
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestApp", "TestApp\TestApp.fsproj", "{AF91CE44-A745-4A5C-A436-CE5B3BA0BAC9}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{AEC26EF7-ABFC-41FC-B821-624C13B61135}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database Scripts", "Database Scripts", "{085DF3F9-B005-40D5-8FFF-8BB86FA58EFA}"
 	ProjectSection(SolutionItems) = preProject
-		Full.sql = Full.sql
-		rol_FantaFootballRole.sql = rol_FantaFootballRole.sql
-		tab_PlayerStaticData.sql = tab_PlayerStaticData.sql
-		tab_Positions.sql = tab_Positions.sql
-		tab_TeamData.sql = tab_TeamData.sql
-		typ_PlayerStaticDataType.sql = typ_PlayerStaticDataType.sql
-		typ_TeamDataType.sql = typ_TeamDataType.sql
-		usp_PlayerStaticData_Get.sql = usp_PlayerStaticData_Get.sql
-		usp_PlayerStaticData_Update.sql = usp_PlayerStaticData_Update.sql
-		usp_TeamData_Get.sql = usp_TeamData_Get.sql
-		usp_TeamData_Update.sql = usp_TeamData_Update.sql
+		..\Database Scripts\rol_FantaFootballRole.sql = ..\Database Scripts\rol_FantaFootballRole.sql
+		..\Database Scripts\tab_PlayerStaticData.sql = ..\Database Scripts\tab_PlayerStaticData.sql
+		..\Database Scripts\tab_Positions.sql = ..\Database Scripts\tab_Positions.sql
+		..\Database Scripts\tab_TeamData.sql = ..\Database Scripts\tab_TeamData.sql
+		..\Database Scripts\typ_PlayerStaticDataType.sql = ..\Database Scripts\typ_PlayerStaticDataType.sql
+		..\Database Scripts\typ_TeamDataType.sql = ..\Database Scripts\typ_TeamDataType.sql
+		..\Database Scripts\usp_PlayerStaticData_Get.sql = ..\Database Scripts\usp_PlayerStaticData_Get.sql
+		..\Database Scripts\usp_PlayerStaticData_Update.sql = ..\Database Scripts\usp_PlayerStaticData_Update.sql
+		..\Database Scripts\usp_TeamData_Get.sql = ..\Database Scripts\usp_TeamData_Get.sql
+		..\Database Scripts\usp_TeamData_Update.sql = ..\Database Scripts\usp_TeamData_Update.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AE17ADE6-17E0-4E59-908C-6FDF79C70324}"
+	ProjectSection(SolutionItems) = preProject
+		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
 Global

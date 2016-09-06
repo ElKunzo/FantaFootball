@@ -21,13 +21,11 @@ module Downloader =
 
     let buildDefaultHttpClient () = 
         let client = new HttpClient()
-
         client
 
     let buildFootballDataApiHttpClient () = 
         let client = new HttpClient()
         client.DefaultRequestHeaders.Add("X-Auth-Token", FootballDataApiKey.key);
-
         client
         
     let downloadPlayersAsync (t:Team) = 

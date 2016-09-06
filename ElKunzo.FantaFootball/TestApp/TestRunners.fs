@@ -1,30 +1,25 @@
 ﻿namespace ElKunzo.FantaFootball.TestApp
 
+open System
 open System.Threading
 open FSharp.Configuration
 open ElKunzo.FantaFootball.Components
-open ElKunzo.FantaFootball.DataTransferObjects
-open ElKunzo.FantaFootball.DataAccess
-open ElKunzo.FantaFootball.DataTransferObjects.External
 open ElKunzo.FantaFootball.DataTransferObjects.Internal
 
 module TestRunners = 
     type Settings = AppSettings<"App.config">
 
-    let commandTimeout = Settings.CommandTimeout
-    let databaseConnectionString = Settings.ConnectionStrings.FootballData
-
-    
     let StaticDataCacheTest () = 
-        let a = StaticDataCache.TeamDataCache
-        //let b = StaticDataCache.PlayerDataCache
+        let teams = StaticDataCache.TeamDataCache("usp_TeamData_Get", Mapper.mapTeamStaticDataFromSql, TimeSpan.FromMinutes(0.3))
+        let players = StaticDataCache.PlayerStaticDataCache("usp_PlayerStaticData_Get", Mapper.mapPlayerStaticDataFromSql, TimeSpan.FromMinutes(0.3))
 
-        while (true) do
-            printfn "Iteration done"
-            let team = a 185
+        for i in 1 .. 40 do
+            printfn "Iteration %i done" i
+            let team = teams.TryGetItem 185
+            let player = players.TryGetItem 4138
             match team with | None -> printfn "No team found" | Some x -> printfn "Team with Id %i: %s" 185 x.FullName
-            Thread.Sleep(10000)
-
+            match player with | None -> printfn "No player found" | Some x -> printfn "Player with Id %i: %s" 4138 x.FullName
+            Thread.Sleep(2000)
 
     let GetMatchReportTest () = 
         printfn "\nRetreiving WhoScored.com match report\n"
@@ -34,6 +29,3 @@ module TestRunners =
         match matchReport with 
         | None -> printfn "Could not download match report."
         | Some report -> printfn "%s - %s" report.Home.Name report.Away.Name 
-            
-
-        0

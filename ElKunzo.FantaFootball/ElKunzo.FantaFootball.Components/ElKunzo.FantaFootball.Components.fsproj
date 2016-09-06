@@ -55,8 +55,8 @@
     <Compile Include="JsonParser.fs" />
     <Compile Include="Mapper.fs" />
     <Compile Include="Downloader.fs" />
-    <Content Include="packages.config" />
     <Compile Include="StaticDataCache.fs" />
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

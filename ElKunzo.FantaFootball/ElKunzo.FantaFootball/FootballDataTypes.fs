@@ -60,7 +60,7 @@ module FootballDataTypes =
             Code : string;
             SquadMarketValue : string;
             CrestUrl : string;
-            Players : seq<Player>;
+            //Players : seq<Player>;
             FootballDataId : int;
         }
 

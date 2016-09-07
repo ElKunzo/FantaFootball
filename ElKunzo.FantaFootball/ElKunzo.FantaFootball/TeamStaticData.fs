@@ -5,6 +5,7 @@ open System.Data.Common
 open Microsoft.SqlServer.Server
 open Newtonsoft.Json
 
+open ElKunzo.FantaFootball.DataAccess
 open ElKunzo.FantaFootball.External.FootballDataTypes
 
 module TeamStaticData = 
@@ -80,10 +81,13 @@ module TeamStaticData =
 
     
 
-    let mapFromExternal (extTeam:Team) = 
+    let mapFromExternal (cache:Cache) (extTeam:Team) = 
+        let footballDataId = extTeam._Links.Self.Href.Split('/') |> Seq.last |> int
+        let known = cache.PublicData |> Seq.tryFind (fun t -> t.FootballDataId = footballDataId)
+        
         {
-            Id = -1;
-            FootballDataId = extTeam.FootballDataId;
+            Id = match known with | None -> -1 | Some x -> x.Id; 
+            FootballDataId = footballDataId;
             WhoScoredId = -1;
             Name = extTeam.ShortName;
             FullName = extTeam.Name;
@@ -91,20 +95,6 @@ module TeamStaticData =
             SquadMarketValue = (mapMarketValue extTeam.SquadMarketValue);
             CrestUrl = (mapNullString extTeam.CrestUrl);
         }
-
-
-
-    let downloadPlayersAsync (t:Team) = async {
-        let teamId = (t._Links.Self.Href).Split('/') |> Seq.last |> int
-        let url = t._Links.Players.Href
-        let! result = downloadAsync url buildFootballDataApiHttpClient
-        match result with
-        | None -> return { t with FootballDataId = teamId }
-        | Some data -> 
-            let playerCollection = JsonConvert.DeserializeObject<PlayerCollection>(data)
-            let players = playerCollection.Players |> Seq.map (fun p -> { p with FootballDataTeamId = teamId })
-            return { t with Players = players; FootballDataId = teamId  }
-    }
 
 
 
@@ -116,8 +106,17 @@ module TeamStaticData =
         | None -> return None 
         | Some x ->
             let comp = JsonConvert.DeserializeObject<Competition>(x)
-            let teams = Async.Parallel [ for team in comp.Teams -> downloadPlayersAsync team ] 
-                        |> Async.RunSynchronously
-            let output = { comp with Teams = teams }
-            return (Some output)
+            return (Some comp.Teams)
+    }
+
+
+
+    let updateDataAsync teamCache competitionUrl = async {
+        let! teamData = downloadDataAsync competitionUrl
+        if teamData.IsNone then failwith "Could not download competition data"
+        let internalTeams = teamData.Value |> Seq.map (fun t -> mapFromExternal teamCache t)
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@TeamData" mapToSqlType internalTeams
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_TeamData_Update" [| sqlParameter |]
+//        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" PlayerStaticData.mapToSqlType (internalTeams |> Seq.map snd |> Seq.concat)
+//        let! result = DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_Update" [| sqlParameter |]
     }

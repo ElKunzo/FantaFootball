@@ -27,10 +27,11 @@ module DatabaseDataAccess =
 
 
 
-    let createTableValuedParameter parameterName (sqlDataRecordsCreator:'a -> seq<SqlDataRecord>) item =
+    let createTableValuedParameter parameterName (sqlDataRecordsCreator:seq<'a> -> seq<SqlDataRecord>) (item:seq<'a>) =
         let result = 
             match item with
             | null -> new SqlParameter(parameterName, null)
+            | _ when Seq.isEmpty item -> new SqlParameter(parameterName, null)
             | _ ->new SqlParameter(parameterName, (sqlDataRecordsCreator item ))
         result.SqlDbType <- SqlDbType.Structured
         result

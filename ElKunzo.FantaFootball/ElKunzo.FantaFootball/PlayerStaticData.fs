@@ -4,8 +4,11 @@ open System
 open System.Data
 open System.Data.Common
 open Microsoft.SqlServer.Server
+open Newtonsoft.Json
 
+open ElKunzo.FantaFootball.DataAccess
 open ElKunzo.FantaFootball.External.FootballDataTypes
+open ElKunzo.FantaFootball.External.WhoScoredTypes
 
 module PlayerStaticData = 
 
@@ -18,7 +21,7 @@ module PlayerStaticData =
         Position : Position;
         Name : string;
         FullName : string;
-        DateOfBirth : DateTime option;
+        DateOfBirth : DateTime;
         Nationality : string;
         ContractUntil : DateTime option;
         MarketValue : int option;
@@ -58,7 +61,7 @@ module PlayerStaticData =
             Position = enum<Position> (dataReader.GetInt32(positionOrdinal));
             Name = dataReader.GetString(nameOrdinal);
             FullName = dataReader.GetString(fullNameOrdinal);
-            DateOfBirth = if dataReader.IsDBNull(dateOfBirthOrdinal) then None else Some (dataReader.GetDateTime(dateOfBirthOrdinal));
+            DateOfBirth = dataReader.GetDateTime(dateOfBirthOrdinal);
             Nationality = dataReader.GetString(nationalityOrdinal);
             ContractUntil = if dataReader.IsDBNull(contractUntilOrdinal) then None else Some (dataReader.GetDateTime(contractUntilOrdinal));
             MarketValue = if dataReader.IsDBNull(marketValueOrdinal) then None else Some (dataReader.GetInt32(marketValueOrdinal));
@@ -92,7 +95,7 @@ module PlayerStaticData =
                 record.SetInt32(5, int player.Position)
                 record.SetString(6, player.Name)
                 record.SetString(7, player.FullName)
-                match player.DateOfBirth with | Some x -> record.SetDateTime(8, x) | None -> record.SetDBNull(8)
+                record.SetDateTime(8, player.DateOfBirth)
                 record.SetString(9, player.Nationality)
                 match player.ContractUntil with | Some x -> record.SetDateTime(10, x) | None -> record.SetDBNull(10)
                 match player.MarketValue with | Some x -> record.SetInt32(11, x) | None -> record.SetDBNull(11)
@@ -100,9 +103,8 @@ module PlayerStaticData =
 
 
 
-    let mapFromExternal teamId (extPlayer:Player) = 
+    let mapFromExternal (playerCache:Cache) teamId footballDataTeamId (extPlayer:Player) = 
         let mapPosition positionAsString = 
-            printfn "%s" positionAsString
             match positionAsString with
             | "Keeper" -> Position.Goalkeeper
             | "Right-Back" | "Left-Back" | "Centre Back" -> Position.Defender
@@ -110,6 +112,10 @@ module PlayerStaticData =
             | "Left Midfield" | "Right Midfield" | "Left Wing" | "Right Wing" -> Position.Midfielder
             | "Centre Forward" | "Secondary Striker" -> Position.Forward
             | _ -> Position.Unknown
+
+        let isPlayerTheSame (internalPlayer:T) (externalPlayer:Player) =
+            internalPlayer.DateOfBirth = externalPlayer.DateOfBirth &&
+            internalPlayer.FullName = externalPlayer.Name
 
         let mapJerseyNumber numberAsString =
             let opt = (mapNullString numberAsString)
@@ -124,18 +130,45 @@ module PlayerStaticData =
             | Some (x:string) -> let data = x.Split('-') |> Array.map (fun a -> int a)
                                  Some (DateTime(data.[0], data.[1], data.[2]))
 
+        let id = 
+            let knownPlayersForTeam = playerCache.PublicData |> Seq.filter (fun p -> p.TeamId = teamId)
+            let known = knownPlayersForTeam |> Seq.tryFind (fun p -> isPlayerTheSame p extPlayer)
+            match known with
+            | None -> -1
+            | Some x -> x.Id
+
         {
-            Id = -1;
+            Id = id;
             WhoScoredId = -1;
-            FootballDataTeamId = extPlayer.FootballDataTeamId;
+            FootballDataTeamId = footballDataTeamId;
             TeamId = teamId;
             JerseyNumber = (mapJerseyNumber extPlayer.JerseyNumber);
             Position = (mapPosition extPlayer.Position);
             Name = extPlayer.Name;
             FullName = extPlayer.Name;
-            DateOfBirth = if extPlayer.DateOfBirth = DateTime.MinValue then None else Some extPlayer.DateOfBirth;
+            DateOfBirth = extPlayer.DateOfBirth;
             Nationality = extPlayer.Nationality
             ContractUntil = mapContractUntil extPlayer.ContractUntil;
             MarketValue = (mapMarketValue extPlayer.MarketValue);
         }
 
+
+
+    let downloadDataForTeamAsync url = async {
+        let! result = downloadAsync url buildFootballDataApiHttpClient
+        match result with
+        | None -> return None
+        | Some data -> let playerCollection = JsonConvert.DeserializeObject<PlayerCollection>(data)
+                       let footballDataTeamId = playerCollection._Links.Team.Href.Split('/') |> Seq.last |> int
+                       return Some (footballDataTeamId, playerCollection.Players)
+    }
+
+    let updateDataForTeamAsync urlTemplate (playerCache:Cache) (team:TeamStaticData.T) = async {
+        let url = String.Format(urlTemplate, team.FootballDataId)
+        let! playerData = downloadDataForTeamAsync url
+        if playerData.IsNone then failwith "Could not download player data"
+        let footballDataTeamId, externalPlayers = playerData.Value
+        let internalPlayers = externalPlayers |> Seq.map (fun p -> mapFromExternal playerCache team.Id footballDataTeamId p)
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType internalPlayers
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_Update" [| sqlParameter |]
+    }

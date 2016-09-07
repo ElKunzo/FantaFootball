@@ -1,8 +1,11 @@
 ﻿namespace ElKunzo.FantaFootball.Internal
 
 open System
+open System.Data
+open System.Net
 open System.Net.Http
 open System.Collections.Generic
+open Microsoft.SqlServer.Server
 
 open ElKunzo.FantaFootball
 open ElKunzo.FantaFootball.DataAccess.DatabaseDataAccess
@@ -32,10 +35,7 @@ module Common =
 
     [<AbstractClass>]
     type BaseCacheWithRefreshTimer<'a>(_spName, _mappingFunction, _refreshInterval) =
-        let RefreshInterval = _refreshInterval
-        let SpName = _spName
-        let MappingFunction = _mappingFunction
-        let mutable (Data:IReadOnlyList<'a>) = executeReadOnlyStoredProcedureAsync SpName MappingFunction Array.empty |> Async.RunSynchronously
+        let mutable (Data:IReadOnlyList<'a>) = executeReadOnlyStoredProcedureAsync _spName _mappingFunction Array.empty |> Async.RunSynchronously
         let mutable TimeStampUtc = DateTime.UtcNow
 
         member this.PublicData = 
@@ -43,10 +43,10 @@ module Common =
         
         member this.IsOutdated () = 
             let difference = DateTime.UtcNow.Subtract(TimeStampUtc)
-            difference > RefreshInterval
+            difference > _refreshInterval
         
         member this.Update () = 
-            Data <- executeReadOnlyStoredProcedureAsync SpName MappingFunction Array.empty |> Async.RunSynchronously
+            Data <- executeReadOnlyStoredProcedureAsync _spName _mappingFunction Array.empty |> Async.RunSynchronously
             TimeStampUtc <- DateTime.UtcNow
         
         abstract member TryGetItem : int -> 'a option
@@ -70,12 +70,18 @@ module Common =
 
     let buildDefaultHttpClient () = 
         let client = new HttpClient()
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/4.0 (Compatible; Windows NT 5.1; MSIE 6.0) " +
+                                                       "(compatible; MSIE 6.0; Windows NT 5.1; " +
+                                                       ".NET CLR 1.1.4322; .NET CLR 2.0.50727)");
         client
 
 
 
     let buildFootballDataApiHttpClient () = 
         let client = new HttpClient()
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/4.0 (Compatible; Windows NT 5.1; MSIE 6.0) " +
+                                                       "(compatible; MSIE 6.0; Windows NT 5.1; " +
+                                                       ".NET CLR 1.1.4322; .NET CLR 2.0.50727)");
         client.DefaultRequestHeaders.Add("X-Auth-Token", FootballDataApiKey.KEY)
         client
 
@@ -83,6 +89,7 @@ module Common =
 
     let downloadAsync url (clientBuilder:unit -> HttpClient) = async {            
         try
+            //ServicePointManager.SecurityProtocol <- SecurityProtocolType.Tls12
             let client = clientBuilder ()
             let uri = new Uri(url)
             let! response = client.GetAsync(uri) |> Async.AwaitTask
@@ -92,3 +99,17 @@ module Common =
         with
         | ex -> printfn "Something went wrong while downloading: %s" ex.Message; return None
     }
+
+
+
+    let mapIdTupleToSqlType (ids:seq<(int*int)>) = 
+        let metaData = [|
+            new SqlMetaData("Id", SqlDbType.Int);
+            new SqlMetaData("WhoScoredId", SqlDbType.Int);
+        |]
+
+        let record = new SqlDataRecord(metaData)
+        ids |> Seq.map (fun id ->
+                record.SetInt32(0, fst id)
+                record.SetInt32(1, snd id)
+                record)

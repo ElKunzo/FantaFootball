@@ -77,46 +77,46 @@ module WhoScoredTypes =
 
     type Statistics = {
         MinutesWithStats : seq<int>;
-        Ratings : Dictionary<int, float>;
-        TotalSaves : Dictionary<int, float>;
-        ClaimsHigh : Dictionary<int, float>;
-        Collected : Dictionary<int, float>;
-        ShotsTotal : Dictionary<int, float>;
-        ShotsOnPost : Dictionary<int, float>;
-        ShotsOnTarget : Dictionary<int, float>;
-        ShotsOffTarget : Dictionary<int, float>;
-        ShotsBlocked : Dictionary<int, float>;
-        Clearances : Dictionary<int, float>;
-        Interceptions : Dictionary<int, float>;
-        Possession : Dictionary<int, float>;
-        Touches : Dictionary<int, float>;
-        PassesTotal : Dictionary<int, float>;
-        PassesAccurate : Dictionary<int, float>;
-        PassesKey : Dictionary<int, float>;
-        PassSuccess : Dictionary<int, float>;
-        AerialsTotal : Dictionary<int, float>;
-        AerialsWon : Dictionary<int, float>;
-        AerialSuccess : Dictionary<int, float>;
-        OffensiveAerials : Dictionary<int, float>;
-        DefensiveAerials : Dictionary<int, float>;
-        CornersTotal : Dictionary<int, float>;
-        CornersAccurate : Dictionary<int, float>;
-        ThrowInsTotal : Dictionary<int, float>;
-        ThrowInsAccurate : Dictionary<int, float>;
-        ThrowInAccuracy : Dictionary<int, float>;
-        OffsidesCaught : Dictionary<int, float>;
-        FoulsCommited : Dictionary<int, float>;
-        TacklesTotal : Dictionary<int, float>;
-        TackleSuccessful : Dictionary<int, float>;
-        TackleUnsuccesful : Dictionary<int, float>;
-        TackleSuccess : Dictionary<int, float>;
-        DribbledPast : Dictionary<int, float>;
-        DribblesWon : Dictionary<int, float>;
-        DribblesAttempted : Dictionary<int, float>;
-        DribblesLost : Dictionary<int, float>;
-        DribbleSuccess : Dictionary<int, float>;
-        Dispossessed : Dictionary<int, float>;
-        Errors : Dictionary<int, float>;
+        Ratings : Map<int, float>;
+        TotalSaves : Map<int, float>;
+        ClaimsHigh : Map<int, float>;
+        Collected : Map<int, float>;
+        ShotsTotal : Map<int, float>;
+        ShotsOnPost : Map<int, float>;
+        ShotsOnTarget : Map<int, float>;
+        ShotsOffTarget : Map<int, float>;
+        ShotsBlocked : Map<int, float>;
+        Clearances : Map<int, float>;
+        Interceptions : Map<int, float>;
+        Possession : Map<int, float>;
+        Touches : Map<int, float>;
+        PassesTotal : Map<int, float>;
+        PassesAccurate : Map<int, float>;
+        PassesKey : Map<int, float>;
+        PassSuccess : Map<int, float>;
+        AerialsTotal : Map<int, float>;
+        AerialsWon : Map<int, float>;
+        AerialSuccess : Map<int, float>;
+        OffensiveAerials : Map<int, float>;
+        DefensiveAerials : Map<int, float>;
+        CornersTotal : Map<int, float>;
+        CornersAccurate : Map<int, float>;
+        ThrowInsTotal : Map<int, float>;
+        ThrowInsAccurate : Map<int, float>;
+        ThrowInAccuracy : Map<int, float>;
+        OffsidesCaught : Map<int, float>;
+        FoulsCommited : Map<int, float>;
+        TacklesTotal : Map<int, float>;
+        TackleSuccessful : Map<int, float>;
+        TackleUnsuccesful : Map<int, float>;
+        TackleSuccess : Map<int, float>;
+        DribbledPast : Map<int, float>;
+        DribblesWon : Map<int, float>;
+        DribblesAttempted : Map<int, float>;
+        DribblesLost : Map<int, float>;
+        DribbleSuccess : Map<int, float>;
+        Dispossessed : Map<int, float>;
+        Errors : Map<int, float>;
     }
 
 
@@ -167,8 +167,8 @@ module WhoScoredTypes =
 
 
     type MatchReport = {
-        PlayerIdNameDictionary : Dictionary<int, string>;
-        PeriodMinuteLimits : Dictionary<int, int>;
+        PlayerIdNameDictionary : Map<int, string>;
+        PeriodMinuteLimits : Map<int, int>;
         TimeStamp : DateTime;
         RefereeName : string;
         Attendance : int;

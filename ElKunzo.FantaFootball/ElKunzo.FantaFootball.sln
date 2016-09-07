@@ -18,10 +18,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database Scripts", "Databas
 		..\Database Scripts\typ_FixtureDataType.sql = ..\Database Scripts\typ_FixtureDataType.sql
 		..\Database Scripts\typ_PlayerStaticDataType.sql = ..\Database Scripts\typ_PlayerStaticDataType.sql
 		..\Database Scripts\typ_TeamDataType.sql = ..\Database Scripts\typ_TeamDataType.sql
+		..\Database Scripts\typ_WhoScoredIdType.sql = ..\Database Scripts\typ_WhoScoredIdType.sql
 		..\Database Scripts\usp_FixtureData_Get.sql = ..\Database Scripts\usp_FixtureData_Get.sql
 		..\Database Scripts\usp_FixtureData_Update.sql = ..\Database Scripts\usp_FixtureData_Update.sql
 		..\Database Scripts\usp_PlayerStaticData_Get.sql = ..\Database Scripts\usp_PlayerStaticData_Get.sql
 		..\Database Scripts\usp_PlayerStaticData_Update.sql = ..\Database Scripts\usp_PlayerStaticData_Update.sql
+		..\Database Scripts\usp_PlayerStaticData_UpdateWhoScoredId.sql = ..\Database Scripts\usp_PlayerStaticData_UpdateWhoScoredId.sql
 		..\Database Scripts\usp_TeamData_Get.sql = ..\Database Scripts\usp_TeamData_Get.sql
 		..\Database Scripts\usp_TeamData_Update.sql = ..\Database Scripts\usp_TeamData_Update.sql
 	EndProjectSection

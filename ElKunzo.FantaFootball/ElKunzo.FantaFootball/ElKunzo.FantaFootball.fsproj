@@ -59,6 +59,7 @@
     <Compile Include="PlayerStaticData.fs" />
     <Compile Include="FixtureData.fs" />
     <Compile Include="MatchReport.fs" />
+    <Compile Include="CacheRepository.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

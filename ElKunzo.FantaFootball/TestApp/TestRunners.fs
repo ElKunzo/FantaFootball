@@ -20,10 +20,10 @@ module TestRunners =
 
 
     let GetMatchReportTest () = 
-        printf "Retreiving WhoScored.com match report...   "
+        printfn "Retreiving WhoScored.com match report...   "
 
         for i in 1115140 .. 1115200 do
-            Thread.Sleep(2000)
+            Thread.Sleep(5000)
             let matchReport = (MatchReport.downloadDataAsync (liveMatchReportUrlTemplate.ToString()) i) |> Async.RunSynchronously
             match matchReport with 
             | None -> printfn "Could not download match report."

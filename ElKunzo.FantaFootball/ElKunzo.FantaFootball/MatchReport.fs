@@ -16,6 +16,7 @@ module MatchReport =
         result
 
 
+
     let getUpdateablePlayer (updateablePlayers:seq<PlayerStaticData.T>) id name = 
         let known = updateablePlayers |> Seq.filter (fun p -> p.Name = name)
         match (known |> Seq.length) with
@@ -48,7 +49,3 @@ module MatchReport =
             | None -> return None
             | Some x -> return Some (parseMatchReport x)
         }
-    
-
-
-

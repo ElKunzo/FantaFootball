@@ -87,7 +87,7 @@ module Common =
 
 
 
-    let downloadAsync url (clientBuilder:unit -> HttpClient) = async {            
+    let downloadAsync url (clientBuilder:unit -> HttpClient) = async {
         try
             //ServicePointManager.SecurityProtocol <- SecurityProtocolType.Tls12
             let client = clientBuilder ()

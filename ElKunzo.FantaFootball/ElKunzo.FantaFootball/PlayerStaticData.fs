@@ -130,16 +130,16 @@ module PlayerStaticData =
             | Some (x:string) -> let data = x.Split('-') |> Array.map (fun a -> int a)
                                  Some (DateTime(data.[0], data.[1], data.[2]))
 
-        let id = 
+        let internalId, whoScoredId = 
             let knownPlayersForTeam = playerCache.PublicData |> Seq.filter (fun p -> p.TeamId = teamId)
             let known = knownPlayersForTeam |> Seq.tryFind (fun p -> isPlayerTheSame p extPlayer)
             match known with
-            | None -> -1
-            | Some x -> x.Id
+            | None -> (-1, -1)
+            | Some x -> (x.Id, x.WhoScoredId)
 
         {
-            Id = id;
-            WhoScoredId = -1;
+            Id = internalId
+            WhoScoredId = whoScoredId;
             FootballDataTeamId = footballDataTeamId;
             TeamId = teamId;
             JerseyNumber = (mapJerseyNumber extPlayer.JerseyNumber);

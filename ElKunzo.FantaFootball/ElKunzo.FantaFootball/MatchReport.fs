@@ -3,17 +3,21 @@
 open System
 open Newtonsoft.Json
 
+open ElKunzo.FantaFootball.DomainTypes
 open ElKunzo.FantaFootball.DataAccess
 open ElKunzo.FantaFootball.External.WhoScoredTypes
 
 module MatchReport = 
 
     let parseMatchReport (jsonString:string) = 
-        let a = jsonString.Split([| "var matchCentreData = " |], StringSplitOptions.RemoveEmptyEntries).[1]
-        let b = a.Split([| "\"events\":" |], StringSplitOptions.None).[0]
-        let matchAndTeamData = b.Remove(b.Length - 1, 1) + "}"
-        let result = JsonConvert.DeserializeObject<MatchReport>(matchAndTeamData)
-        result
+        try
+            let a = jsonString.Split([| "var matchCentreData = " |], StringSplitOptions.RemoveEmptyEntries).[1]
+            let b = a.Split([| "\"events\":" |], StringSplitOptions.None).[0]
+            let matchAndTeamData = b.Remove(b.Length - 1, 1) + "}"
+            let result = JsonConvert.DeserializeObject<MatchReport>(matchAndTeamData)
+            Success result
+        with
+        | ex -> Failure ex.Message
 
 
 
@@ -46,6 +50,6 @@ module MatchReport =
             let! result = downloadAsync url buildDefaultHttpClient
 
             match result with 
-            | None -> return None
-            | Some x -> return Some (parseMatchReport x)
+            | Failure x -> return Failure x
+            | Success x -> return parseMatchReport x
         }

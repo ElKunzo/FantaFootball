@@ -2,7 +2,6 @@
 
 open System
 open System.Data
-open System.Net
 open System.Net.Http
 open System.Collections.Generic
 open Microsoft.SqlServer.Server
@@ -35,7 +34,11 @@ module Common =
 
     [<AbstractClass>]
     type BaseCacheWithRefreshTimer<'a>(_spName, _mappingFunction, _refreshInterval) =
-        let mutable (Data:IReadOnlyList<'a>) = executeReadOnlyStoredProcedureAsync _spName _mappingFunction Array.empty |> Async.RunSynchronously
+        let mutable (Data:IReadOnlyList<'a>) = 
+            let data = executeReadOnlyStoredProcedureAsync _spName _mappingFunction Array.empty |> Async.RunSynchronously
+            match data with
+            | Success x -> x
+            | Failure x -> failwith (sprintf "Could not load cahce data from DB: %s" x)
         let mutable TimeStampUtc = DateTime.UtcNow
 
         member this.PublicData = 
@@ -46,12 +49,17 @@ module Common =
             difference > _refreshInterval
         
         member this.Update () = 
-            Data <- executeReadOnlyStoredProcedureAsync _spName _mappingFunction Array.empty |> Async.RunSynchronously
+            let data = 
+                let dbResult = executeReadOnlyStoredProcedureAsync _spName _mappingFunction Array.empty |> Async.RunSynchronously
+                match dbResult with
+                | Success x -> x
+                | Failure x -> failwith (sprintf "Could not load cahce data from DB: %s" x)
+            Data <- data
             TimeStampUtc <- DateTime.UtcNow
         
         abstract member TryGetItem : int -> 'a option
 
-
+    
 
     let mapMarketValue (marketValueAsString:string) = 
         match marketValueAsString with
@@ -70,18 +78,12 @@ module Common =
 
     let buildDefaultHttpClient () = 
         let client = new HttpClient()
-        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/4.0 (Compatible; Windows NT 5.1; MSIE 6.0) " +
-                                                       "(compatible; MSIE 6.0; Windows NT 5.1; " +
-                                                       ".NET CLR 1.1.4322; .NET CLR 2.0.50727)");
         client
 
 
 
     let buildFootballDataApiHttpClient () = 
         let client = new HttpClient()
-        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/4.0 (Compatible; Windows NT 5.1; MSIE 6.0) " +
-                                                       "(compatible; MSIE 6.0; Windows NT 5.1; " +
-                                                       ".NET CLR 1.1.4322; .NET CLR 2.0.50727)");
         client.DefaultRequestHeaders.Add("X-Auth-Token", FootballDataApiKey.KEY)
         client
 
@@ -89,15 +91,14 @@ module Common =
 
     let downloadAsync url (clientBuilder:unit -> HttpClient) = async {
         try
-            //ServicePointManager.SecurityProtocol <- SecurityProtocolType.Tls12
             let client = clientBuilder ()
             let uri = new Uri(url)
             let! response = client.GetAsync(uri) |> Async.AwaitTask
             do response.EnsureSuccessStatusCode() |> ignore
             let! output = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-            return (Some output)
+            return Success output
         with
-        | ex -> printfn "Something went wrong while downloading: %s" ex.Message; return None
+        | ex -> return Failure ex.Message
     }
 
 

@@ -6,6 +6,8 @@ open System.Data.Common
 open System.Data.SqlClient
 open Microsoft.SqlServer.Server
 
+open ElKunzo.FantaFootball.DomainTypes
+
 module DatabaseDataAccess = 
 
     let defaultCommandTimeoutInSeconds = 10
@@ -50,8 +52,8 @@ module DatabaseDataAccess =
 
 
     let executeReadOnlyStoredProcedureAsync storedProcedureName readOperation parameters =
-        try
-            async {
+        async {
+            try
                 use connection = new SqlConnection(databaseConnectionString)
                 use command = createSqlCommand storedProcedureName connection parameters
                 do! connection.OpenAsync() |> Async.AwaitTask |> Async.Ignore
@@ -59,16 +61,16 @@ module DatabaseDataAccess =
                 let! result = (readRowsAsync dataReader (ResizeArray()) readOperation)
                 // finally NextResult has to be called, to ensure that all pending exceptions are thrown
                 do! dataReader.NextResultAsync() |> Async.AwaitTask |> Async.Ignore
-                return result
-            }
-        with
-        | ex -> printfn "Something went wrong reading from the DB (%s)" ex.Message; reraise ()
+                return Success result
+            with
+            | ex -> return Failure ex.Message
+        }
 
 
 
-    let executeWriteOnlyStoredProcedureAsync storedProcedureName parameters =
-        try        
-            async {
+    let executeWriteOnlyStoredProcedureAsync storedProcedureName parameters =      
+        async {
+            try
                 use connection = new SqlConnection(databaseConnectionString)
                 use command = createSqlCommand storedProcedureName connection parameters
                 do! connection.OpenAsync() |> Async.AwaitTask
@@ -77,9 +79,10 @@ module DatabaseDataAccess =
                     command.Transaction <- transaction;
                     let! affectedRows = command.ExecuteNonQueryAsync() |> Async.AwaitTask
                     transaction.Commit()
+                    return Success ()
                 with
                 | ex -> transaction.Rollback()
-                        raise ex
-            }
-        with
-        | ex -> printfn "Something went wrong writing to the DB. (%s)" ex.Message; reraise ()
+                        return Failure ex.Message
+            with
+            | ex -> return Failure ex.Message
+        }

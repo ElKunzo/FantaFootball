@@ -6,6 +6,7 @@ open System.Data.Common
 open Microsoft.SqlServer.Server
 open Newtonsoft.Json
 
+open ElKunzo.FantaFootball.DomainTypes
 open ElKunzo.FantaFootball.DataAccess
 open ElKunzo.FantaFootball.External.FootballDataTypes
 
@@ -141,17 +142,19 @@ module FixtureData =
         let! result = downloadAsync url buildFootballDataApiHttpClient
 
         match result with 
-        | None -> return None
-        | Some x -> return Some (JsonConvert.DeserializeObject<SeasonFixtures>(x))
+            | Failure x -> return Failure x
+            | Success x -> return Success (JsonConvert.DeserializeObject<SeasonFixtures>(x))
     }
 
 
 
     let updateAsync teamCache fixtureCache competitionUrl = async {
         let! externalFixtures = downloadDataAsync competitionUrl
-        if externalFixtures.IsNone then failwith "Could not download fixture data"
-        let internalFixtures = externalFixtures.Value.Fixtures |> Seq.map (fun f -> mapFromExternal teamCache fixtureCache f)
-        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@FixtureData" mapToSqlType internalFixtures
-        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_Update" [| sqlParameter |]
+
+        match externalFixtures with
+        | Failure x -> return Failure x
+        | Success x -> let internalFixtures = x.Fixtures |> Seq.map (fun f -> mapFromExternal teamCache fixtureCache f)
+                       let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@FixtureData" mapToSqlType internalFixtures
+                       return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_Update" [| sqlParameter |]
     }
 

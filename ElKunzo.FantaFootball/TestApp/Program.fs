@@ -4,9 +4,10 @@ open ElKunzo.FantaFootball.TestApp.TestRunners
 [<EntryPoint>]
 let main argv = 
 
-//    UpdatePlayers () |> ignore
-    GetMatchReportTest () |> ignore
-//    UpdateTest () |> ignore
+    UpdateTeams () |> ignore
+    UpdatePlayers () |> ignore
+    UpdateFixtures () |> ignore
+//   GetMatchReportTest () |> ignore
     
     printfn "Done!"
     let a = Console.ReadLine()

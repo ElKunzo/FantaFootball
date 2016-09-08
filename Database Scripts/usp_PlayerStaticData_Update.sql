@@ -19,12 +19,11 @@ BEGIN
 	MERGE 
 		dbo.tab_PlayerStaticData AS TRG
 	USING
-		(SELECT Id, WhoScoredId, FootballDataTeamId, TeamId, JerseyNumber, Position, Name, FullName, DateOfBirth, Nationality, ContractUntil, MarketValue FROM @PlayerData) AS SRC
+		(SELECT Id, FootballDataTeamId, TeamId, JerseyNumber, Position, Name, FullName, DateOfBirth, Nationality, ContractUntil, MarketValue FROM @PlayerData) AS SRC
 	ON
 		TRG.fId = SRC.Id
 	WHEN MATCHED THEN 
-		UPDATE SET  fWhoScoredId = SRC.WhoScoredId,
-					fFootballDataTeamId = SRC.FootballDataTeamId, 
+		UPDATE SET  fFootballDataTeamId = SRC.FootballDataTeamId, 
 				    frTeamId = SRC.TeamId,
 				    fJerseyNumber = SRC.JerseyNumber,
 					frPosition = SRC.Position,
@@ -36,8 +35,8 @@ BEGIN
 					fMarketValue = SRC.MarketValue,
 				    fLastUpdatedUtc = GETUTCDATE()
 	WHEN NOT MATCHED BY TARGET THEN
-		INSERT (fWhoScoredId, fFootballDataTeamId, frTeamId, fJerseyNumber, frPosition, fName, fFullName, fDateOfBirth, fNationality, fContractUntil, fMarketValue, fLastUpdatedUtc)
-		VALUES (SRC.WhoScoredId, SRC.FootballDataTeamId, SRC.TeamId, SRC.JerseyNumber, SRC.Position, SRC.Name, SRC.FullName, SRC.DateOfBirth, SRC.Nationality, SRC.ContractUntil, SRC.MarketValue, GETUTCDATE());
+		INSERT (fFootballDataTeamId, frTeamId, fJerseyNumber, frPosition, fName, fFullName, fDateOfBirth, fNationality, fContractUntil, fMarketValue, fLastUpdatedUtc)
+		VALUES (SRC.FootballDataTeamId, SRC.TeamId, SRC.JerseyNumber, SRC.Position, SRC.Name, SRC.FullName, SRC.DateOfBirth, SRC.Nationality, SRC.ContractUntil, SRC.MarketValue, GETUTCDATE());
 
 	IF @@ERROR <> 0
 		RETURN -1;

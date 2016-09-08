@@ -6,6 +6,7 @@ open System.Data.Common
 open Microsoft.SqlServer.Server
 open Newtonsoft.Json
 
+open ElKunzo.FantaFootball
 open ElKunzo.FantaFootball.DataAccess
 open ElKunzo.FantaFootball.External.FootballDataTypes
 open ElKunzo.FantaFootball.External.WhoScoredTypes
@@ -38,7 +39,7 @@ module PlayerStaticData =
 
 
 
-    let mapFromSqlType (dataReader:DbDataReader) = 
+    let  mapFromSqlType (dataReader:DbDataReader) = 
         let idOrdinal = dataReader.GetOrdinal("fId")
         let whoScoredIdOrdinal = dataReader.GetOrdinal("fWhoScoredId")
         let footballDataTeamIdOrdinal = dataReader.GetOrdinal("fFootballDataTeamId")
@@ -69,7 +70,7 @@ module PlayerStaticData =
 
 
 
-    let mapToSqlType (players:seq<T>) = 
+    let  mapToSqlType (players:seq<T>) = 
         let metaData = [|
             new SqlMetaData("Id", SqlDbType.Int);
             new SqlMetaData("WhoScoredId", SqlDbType.Int);
@@ -103,7 +104,7 @@ module PlayerStaticData =
 
 
 
-    let mapFromExternal (playerCache:Cache) teamId footballDataTeamId (extPlayer:Player) = 
+    let  mapSinglePlayerFromExternal (playerCache:Cache) teamId footballDataTeamId (extPlayer:Player) = 
         let mapPosition positionAsString = 
             match positionAsString with
             | "Keeper" -> Position.Goalkeeper
@@ -154,21 +155,38 @@ module PlayerStaticData =
 
 
 
-    let downloadDataForTeamAsync url = async {
+    let  downloadDataForTeamAsync url = async {
         let! result = downloadAsync url buildFootballDataApiHttpClient
-        match result with
-        | None -> return None
-        | Some data -> let playerCollection = JsonConvert.DeserializeObject<PlayerCollection>(data)
+        match result with 
+        | Failure x -> return Failure x
+        | Success x -> let playerCollection = JsonConvert.DeserializeObject<PlayerCollection>(x)
                        let footballDataTeamId = playerCollection._Links.Team.Href.Split('/') |> Seq.last |> int
-                       return Some (footballDataTeamId, playerCollection.Players)
+                       return Success (footballDataTeamId, playerCollection.Players)
     }
 
+
+
+    let  mapFromExternal playerCache teamId playerData = 
+        match playerData with
+        | Failure x -> Failure x
+        | Success x -> let internalPlayers = (snd x) |> Seq.map (fun p -> mapSinglePlayerFromExternal playerCache teamId (fst x) p)
+                       Success internalPlayers
+
+
+
+    let  persistAsync internalPlayers = async {
+        match internalPlayers with 
+        | Failure x -> return Failure x
+        | Success x -> let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType x
+                       return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_Update" [| sqlParameter |]
+    }
+
+
+
     let updateDataForTeamAsync urlTemplate (playerCache:Cache) (team:TeamStaticData.T) = async {
-        let url = String.Format(urlTemplate, team.FootballDataId)
-        let! playerData = downloadDataForTeamAsync url
-        if playerData.IsNone then failwith "Could not download player data"
-        let footballDataTeamId, externalPlayers = playerData.Value
-        let internalPlayers = externalPlayers |> Seq.map (fun p -> mapFromExternal playerCache team.Id footballDataTeamId p)
-        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType internalPlayers
-        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_Update" [| sqlParameter |]
+        printfn "Processing team: %s" team.FullName
+        return! String.Format(urlTemplate, team.FootballDataId)
+                |> downloadDataForTeamAsync |> Async.RunSynchronously
+                |> mapFromExternal playerCache team.Id
+                |> persistAsync
     }

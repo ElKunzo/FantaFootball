@@ -52,9 +52,11 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="FootballDataApiKey.fs" />
+    <Compile Include="DomainTypes.fs" />
+    <Compile Include="DatabaseDataAccess.fs" />
+    <Compile Include="Common.fs" />
     <Compile Include="FootballDataTypes.fs" />
     <Compile Include="WhoScoredTypes.fs" />
-    <Compile Include="Common.fs" />
     <Compile Include="TeamStaticData.fs" />
     <Compile Include="PlayerStaticData.fs" />
     <Compile Include="FixtureData.fs" />
@@ -76,11 +78,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
-    <ProjectReference Include="..\ElKunzo.FantaFootball.DataAccess\ElKunzo.FantaFootball.DataAccess.fsproj">
-      <Name>ElKunzo.FantaFootball.DataAccess</Name>
-      <Project>{5f19ba3b-564f-42f6-af82-c1f502fd15ca}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

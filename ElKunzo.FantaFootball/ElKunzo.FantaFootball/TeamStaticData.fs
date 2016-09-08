@@ -5,6 +5,7 @@ open System.Data.Common
 open Microsoft.SqlServer.Server
 open Newtonsoft.Json
 
+open ElKunzo.FantaFootball.DomainTypes
 open ElKunzo.FantaFootball.DataAccess
 open ElKunzo.FantaFootball.External.FootballDataTypes
 
@@ -102,21 +103,25 @@ module TeamStaticData =
         let url = baseUrl + "/teams"
         let! result = downloadAsync url buildFootballDataApiHttpClient
             
-        match result with
-        | None -> return None 
-        | Some x ->
-            let comp = JsonConvert.DeserializeObject<Competition>(x)
-            return (Some comp.Teams)
+        match result with 
+            | Failure x -> return Failure x
+            | Success x -> 
+                try
+                    let comp = JsonConvert.DeserializeObject<Competition>(x)
+                    return Success comp.Teams
+                with
+                | ex -> return Failure ex.Message
     }
 
 
 
     let updateDataAsync teamCache competitionUrl = async {
         let! teamData = downloadDataAsync competitionUrl
-        if teamData.IsNone then failwith "Could not download competition data"
-        let internalTeams = teamData.Value |> Seq.map (fun t -> mapFromExternal teamCache t)
-        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@TeamData" mapToSqlType internalTeams
-        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_TeamData_Update" [| sqlParameter |]
-//        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" PlayerStaticData.mapToSqlType (internalTeams |> Seq.map snd |> Seq.concat)
-//        let! result = DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_Update" [| sqlParameter |]
+
+        match teamData with
+        | Failure x -> return Failure x
+        | Success x -> 
+            let internalTeams = x |> Seq.map (fun t -> mapFromExternal teamCache t)
+            let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@TeamData" mapToSqlType internalTeams
+            return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_TeamData_Update" [| sqlParameter |]
     }

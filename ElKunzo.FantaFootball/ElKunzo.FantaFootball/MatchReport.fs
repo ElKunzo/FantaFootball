@@ -20,19 +20,41 @@ module MatchReport =
         | ex -> Failure ex.Message
 
 
+    let updateTeamIdsAsync (teamCache:TeamStaticData.Cache) (report:MatchReport) = async {
+        let getUpdateableTeam (updateableTeams:seq<TeamStaticData.T>) (teamdata:(int*string)) = 
+            let id, name = teamdata
+            let known = updateableTeams |> Seq.filter (fun t -> t.Name = name || t.FullName = name)
+            match (known |> Seq.length) with
+            | 1 -> let t = known |> Seq.head; 
+                   if (t.WhoScoredId <> id) then Some (t.Id, id) else None
+            | 0 -> None
+            | _ -> None
 
-    let getUpdateablePlayer (updateablePlayers:seq<PlayerStaticData.T>) id name = 
-        let known = updateablePlayers |> Seq.filter (fun p -> p.Name = name)
-        match (known |> Seq.length) with
-        | 1 -> let p = known |> Seq.head
-               if (p.WhoScoredId <> id) then Some (p.Id, id) else None
-        | 0 -> None
-        | _ -> None
+
+        let missingIdTeams = teamCache.PublicData |> Seq.filter (fun t -> t.WhoScoredId = -1)
+        if (missingIdTeams |> Seq.length = 0) then return ()
+        let teamIds = [| (report.Home.TeamId, report.Home.Name); (report.Away.TeamId, report.Away.Name) |]
+                      |> Array.map (fun x -> getUpdateableTeam missingIdTeams x)
+                      |> Array.filter (fun x -> x.IsSome)
+                      |> Array.map (fun x -> x.Value)
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType teamIds
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_TeamData_UpdateWhoScoredId" [| sqlParameter |]
+
+    }
 
 
 
     let updatePlayerIdsAsync (playerCache:PlayerStaticData.Cache) (report:MatchReport) = async {
-        let missingIdPlayers = playerCache.PublicData |> Seq.filter (fun p -> p.WhoScoredId = -1)
+        let getUpdateablePlayer (updateablePlayers:seq<PlayerStaticData.T>) id name = 
+            let known = updateablePlayers |> Seq.filter (fun p -> p.Name = name)
+            match (known |> Seq.length) with
+            | 1 -> let p = known |> Seq.head
+                   if (p.WhoScoredId <> id) then Some (p.Id, id) else None
+            | 0 -> printfn "Player %s not found in FootballData data" name; None
+            | _ -> None
+
+
+        let missingIdPlayers = playerCache.PublicData //|> Seq.filter (fun p -> p.WhoScoredId = -1)
         let ids =  report.PlayerIdNameDictionary 
                     |> Map.toArray
                     |> Array.map (fun (id, name) -> getUpdateablePlayer missingIdPlayers id name)

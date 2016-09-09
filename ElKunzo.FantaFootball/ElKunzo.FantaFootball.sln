@@ -24,6 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database Scripts", "Databas
 		..\Database Scripts\usp_PlayerStaticData_UpdateWhoScoredId.sql = ..\Database Scripts\usp_PlayerStaticData_UpdateWhoScoredId.sql
 		..\Database Scripts\usp_TeamData_Get.sql = ..\Database Scripts\usp_TeamData_Get.sql
 		..\Database Scripts\usp_TeamData_Update.sql = ..\Database Scripts\usp_TeamData_Update.sql
+		..\Database Scripts\usp_TeamData_UpdateWhoScoredId.sql = ..\Database Scripts\usp_TeamData_UpdateWhoScoredId.sql
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AE17ADE6-17E0-4E59-908C-6FDF79C70324}"

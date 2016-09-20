@@ -1,0 +1,20 @@
+﻿CREATE TABLE tab_PlayerStaticData(
+	fId INT NOT NULL IDENTITY(1,1),
+	frFixtureId INT NOT NULL,
+	frPlayerId INT NOT NULL,
+	fMinutesPlayed INT,
+	fGoalsScored INT,
+	fAssists INT,
+	fCleanSheet BIT,
+	fShotsSaved INT,
+	fPenaltiesSaved INT,
+	fPenaltiesMissed INT,
+	fGoalsConceded INT,
+	fYellowCards INT,
+	fRedCard INT,
+	fOwnGoals INT,
+	fLastUpdatedUtc DATETIME,
+	PRIMARY KEY (fId),
+	FOREIGN KEY (frFixtureId) REFERENCES tab_FixtureData(fId),
+	FOREIGN KEY (frPlayerId) REFERENCES tab_PlayerStaticData(fId)
+);

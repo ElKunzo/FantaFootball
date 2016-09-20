@@ -114,3 +114,21 @@ module Common =
                 record.SetInt32(0, fst id)
                 record.SetInt32(1, snd id)
                 record)
+
+
+
+    let asyncThrottle maxCountParallel asyncJobSeq =
+        seq { 
+                let n = new Threading.Semaphore(maxCountParallel, maxCountParallel)
+                for f in asyncJobSeq ->
+                    async { let! ok = Async.AwaitWaitHandle(n)
+                            let! result = Async.Catch f
+                            n.Release() |> ignore
+                            return match result with
+                                    | Choice1Of2 rslt -> rslt
+                                    | Choice2Of2 exn  -> raise exn
+                        }
+            }
+
+    let rnd = System.Random()
+    let genRandomNumber () = rnd.Next (500, 5000)

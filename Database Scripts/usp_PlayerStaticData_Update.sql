@@ -35,8 +35,8 @@ BEGIN
 					fMarketValue = SRC.MarketValue,
 				    fLastUpdatedUtc = GETUTCDATE()
 	WHEN NOT MATCHED BY TARGET THEN
-		INSERT (fFootballDataTeamId, frTeamId, fJerseyNumber, frPosition, fName, fFullName, fDateOfBirth, fNationality, fContractUntil, fMarketValue, fLastUpdatedUtc)
-		VALUES (SRC.FootballDataTeamId, SRC.TeamId, SRC.JerseyNumber, SRC.Position, SRC.Name, SRC.FullName, SRC.DateOfBirth, SRC.Nationality, SRC.ContractUntil, SRC.MarketValue, GETUTCDATE());
+		INSERT (fWhoScoredId, fFootballDataTeamId, frTeamId, fJerseyNumber, frPosition, fName, fFullName, fDateOfBirth, fNationality, fContractUntil, fMarketValue, fLastUpdatedUtc)
+		VALUES (-1, SRC.FootballDataTeamId, SRC.TeamId, SRC.JerseyNumber, SRC.Position, SRC.Name, SRC.FullName, SRC.DateOfBirth, SRC.Nationality, SRC.ContractUntil, SRC.MarketValue, GETUTCDATE());
 
 	IF @@ERROR <> 0
 		RETURN -1;

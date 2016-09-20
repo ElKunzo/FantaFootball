@@ -186,4 +186,16 @@ module WhoScoredTypes =
         PeriodCode : int;
         Home : TeamData;
         Away : TeamData;
+        WhoScoredId : int;
+    }
+
+
+
+    type CalendarData = {
+        WhoScoredId : int;
+        MatchDateUtc : DateTime;
+        WhoScoredHomeId : int;
+        WhoScoredAwayId : int;
+        InternalHomeId : int;
+        InternalAwayId : int;
     }

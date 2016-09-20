@@ -33,8 +33,8 @@ BEGIN
 					fAwayScore = SRC.AwayScore,
 				    fLastUpdatedUtc = GETUTCDATE()
 	WHEN NOT MATCHED BY TARGET THEN
-		INSERT (fFootballDataId, frStatusId, fKickOffUtc, fMatchDay, frHomeTeamId, frAwayTeamId, fHomeScore, fAwayScore, fLastUpdatedUtc)
-		VALUES (SRC.FootballDataId, SRC.StatusId, SRC.KickOffUtc, SRC.MatchDay, SRC.HomeTeamId, SRC.AwayTeamId, SRC.HomeScore, SRC.AwayScore, GETUTCDATE());
+		INSERT (fWhoScoredId, fFootballDataId, frStatusId, fKickOffUtc, fMatchDay, frHomeTeamId, frAwayTeamId, fHomeScore, fAwayScore, fLastUpdatedUtc)
+		VALUES (-1, SRC.FootballDataId, SRC.StatusId, SRC.KickOffUtc, SRC.MatchDay, SRC.HomeTeamId, SRC.AwayTeamId, SRC.HomeScore, SRC.AwayScore, GETUTCDATE());
 
 	IF @@ERROR <> 0
 		RETURN -1;

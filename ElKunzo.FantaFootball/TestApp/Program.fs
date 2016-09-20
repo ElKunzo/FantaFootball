@@ -6,9 +6,9 @@ let main argv =
 
 //    UpdateTeams () |> ignore
 //    UpdatePlayers () |> ignore
-//   UpdateFixtures () |> ignore
-    GetMatchReportTest () |> ignore
-//    let res = TestArrayThings 0.5
+//    UpdateFixtures () |> ignore
+//    UpdateFixtureWhoScoredIds () |> ignore
+    UpdateTeamAndPlayerWhoScoredIds () |> ignore
     
     printfn "Done!"
     let a = Console.ReadLine()

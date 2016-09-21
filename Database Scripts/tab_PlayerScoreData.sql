@@ -1,4 +1,4 @@
-﻿CREATE TABLE tab_PlayerStaticData(
+﻿CREATE TABLE tab_PlayerScoreData(
 	fId INT NOT NULL IDENTITY(1,1),
 	frFixtureId INT NOT NULL,
 	frPlayerId INT NOT NULL,

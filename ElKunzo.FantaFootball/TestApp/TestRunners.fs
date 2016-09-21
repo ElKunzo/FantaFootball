@@ -39,7 +39,7 @@ module TestRunners =
             | Success x -> 
                 let team = UpdateTeamWhoScoredIds (MatchReport.updateTeamIdsAsync CacheRepository.Team x |> Async.RunSynchronously)
                 let players = UpdatePlayerWhoScoredIds (MatchReport.updatePlayerIdsAsync CacheRepository.PlayerStatic CacheRepository.Team x |> Async.RunSynchronously)
-                let scores = PlayerScoreData.getDataForMatchReport CacheRepository.PlayerStatic CacheRepository.Fixture x
+                let scores = PlayerScoreData.getDataForMatchReportAsync CacheRepository.PlayerScore CacheRepository.PlayerStatic CacheRepository.Fixture x |> Async.RunSynchronously
                 match team, players with
                 | Success _, Success _ -> printfn "\tDone updating team and players"
                 | Success _, Failure x -> printfn "\tTeam update Ok. Players not ok: %s" x

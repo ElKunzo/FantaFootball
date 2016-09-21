@@ -56,7 +56,7 @@ module PlayerScoreData =
         let penaltiesMissedOrdinal = dataReader.GetOrdinal("fPenaltiesMissed")
         let goalsConcededOrdinal = dataReader.GetOrdinal("fGoalsConceded")
         let yellowCardsOrdinal = dataReader.GetOrdinal("fYellowCards")
-        let redCardsOrdinal = dataReader.GetOrdinal("fRedCards")
+        let redCardsOrdinal = dataReader.GetOrdinal("fRedCard")
         let ownGoalsOrdinal = dataReader.GetOrdinal("fOwnGoals")
         
         {
@@ -161,64 +161,66 @@ module PlayerScoreData =
 
 
     let calculateTotalPoints (player:T) (playerPosition:Position) = 
-        let minutePoints = 
-            match player.MinutesPlayed with
-            | 0 -> 0
-            | _ when player.MinutesPlayed < 60 -> 1
-            | _ -> 2
+        if player.MinutesPlayed = 0 then 0
+        else
+            let minutePoints = 
+                match player.MinutesPlayed with
+                | 0 -> 0
+                | _ when player.MinutesPlayed < 60 -> 1
+                | _ -> 2
 
-        let goalPoints = 
-            match playerPosition with
-            | Position.Goalkeeper | Position.Defender -> 6 * player.GoalsScored
-            | Position.Midfielder -> 5 * player.GoalsScored
-            | Position.Forward -> 4 * player.GoalsScored
-            | _ -> 0
+            let goalPoints = 
+                match playerPosition with
+                | Position.Goalkeeper | Position.Defender -> 6 * player.GoalsScored
+                | Position.Midfielder -> 5 * player.GoalsScored
+                | Position.Forward -> 4 * player.GoalsScored
+                | _ -> 0
 
-        let assistPoints = 
-            3 * player.Assists
+            let assistPoints = 
+                3 * player.Assists
 
-        let cleanSheetPoints = 
-            let cleanSheet = if player.CleanSheet then 1 else 0
-            match playerPosition with
-            | Position.Goalkeeper | Position.Defender -> 4 * cleanSheet
-            | Position.Midfielder -> 1 * cleanSheet
-            | Position.Forward -> 0
-            | _ -> 0
+            let cleanSheetPoints = 
+                let cleanSheet = if player.CleanSheet then 1 else 0
+                match playerPosition with
+                | Position.Goalkeeper | Position.Defender -> 4 * cleanSheet
+                | Position.Midfielder -> 1 * cleanSheet
+                | Position.Forward -> 0
+                | _ -> 0
 
-        let savesPoints = 
-            match playerPosition with
-            | Position.Goalkeeper -> player.ShotsSaved / 3 
-            | _ -> 0
+            let savesPoints = 
+                match playerPosition with
+                | Position.Goalkeeper -> player.ShotsSaved / 3 
+                | _ -> 0
 
-        let penaltySavePoints = 
-            player.PenaltiesSaved * 5
+            let penaltySavePoints = 
+                player.PenaltiesSaved * 5
 
-        let penaltyMissedPoints = 
-            player.PenaltiesMissed * (-2)
+            let penaltyMissedPoints = 
+                player.PenaltiesMissed * (-2)
 
-        let goalsConcededPoints = 
-            match playerPosition with
-            | Position.Goalkeeper | Position.Defender -> (-1) * (player.GoalsConceded / 2)
-            | _ -> 0
+            let goalsConcededPoints = 
+                match playerPosition with
+                | Position.Goalkeeper | Position.Defender -> (-1) * (player.GoalsConceded / 2)
+                | _ -> 0
 
-        let yellowCardPoints = 
-            player.YellowCards * -1
+            let yellowCardPoints = 
+                player.YellowCards * -1
 
-        let redCardPoints = 
-            player.RedCard * -3
+            let redCardPoints = 
+                player.RedCard * -3
 
-        let ownGoalPoints = 
-            player.OwnGoals * -2
+            let ownGoalPoints = 
+                player.OwnGoals * -2
 
-        let result = minutePoints + goalPoints + assistPoints + cleanSheetPoints + savesPoints + 
-                     penaltySavePoints + penaltyMissedPoints + goalsConcededPoints + yellowCardPoints + 
-                     redCardPoints + ownGoalPoints
+            let result = minutePoints + goalPoints + assistPoints + cleanSheetPoints + savesPoints + 
+                         penaltySavePoints + penaltyMissedPoints + goalsConcededPoints + yellowCardPoints + 
+                         redCardPoints + ownGoalPoints
 
-        result
+            result
 
 
 
-    let getDataForMatchReport (playerCache:PlayerStaticData.Cache) (fixtureCache:FixtureData.Cache) (report:MatchReport) = 
+    let getDataForMatchReportAsync (scoreCache:Cache) (playerCache:PlayerStaticData.Cache) (fixtureCache:FixtureData.Cache) (report:MatchReport) = async {
         let getEvents (incidentEvents:seq<IncidentEvent>) = 
             [ "Goal"; "Pass"; "SubstitutionOn"; "SubstitutionOff"; "Card" ]
             |> Seq.map (fun d -> (d, (incidentEvents |> Seq.filter (fun e -> e.Type.DisplayName = d))))
@@ -245,16 +247,26 @@ module PlayerScoreData =
             let internalPlayer = playerCache.PublicData |> Seq.find (fun x -> x.Id = player.PlayerId)
             calculateTotalPoints player internalPlayer.Position
 
+        let getInternalId (player:T) =
+            let internalPlayer = scoreCache.PublicData |> Seq.tryFind (fun x -> x.PlayerId = player.PlayerId && x.FixtureId = player.FixtureId)
+            match internalPlayer with
+            | Some x -> x.Id
+            | None -> -1
+
         let map (mapperFunction:PlayerData -> T option) playerSequence = 
             playerSequence
             |> Seq.map (fun x -> mapperFunction x) 
             |> Seq.filter (fun x -> x.IsSome) 
             |> Seq.map (fun x -> x.Value)
             |> Seq.map (fun x -> { x with TotalPoints = fantasyPoints x })
+            |> Seq.map (fun x -> { x with Id = getInternalId x })
             |> Seq.toArray
         
         let awayPlayers = report.Away.Players |> map awayPlayerMapper
         let homePlayers = report.Home.Players |> map homePlayerMapper
-        Array.concat [ homePlayers; awayPlayers ]
+
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType (Array.concat [ homePlayers; awayPlayers ])
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerScoreData_Update" [| sqlParameter |]
+    }
 
 

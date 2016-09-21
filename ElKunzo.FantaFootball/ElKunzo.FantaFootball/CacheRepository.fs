@@ -15,3 +15,7 @@ module CacheRepository =
 
 
     let Fixture = FixtureData.Cache("usp_FixtureData_Get", FixtureData.mapFromSqlType, TimeSpan.FromMinutes(60.0))
+
+
+
+    let PlayerScore = PlayerScoreData.Cache("usp_PlayerScoreData_Get", PlayerScoreData.mapFromSqlType, TimeSpan.FromMinutes(60.0))

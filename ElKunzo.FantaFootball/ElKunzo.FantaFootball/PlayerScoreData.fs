@@ -118,11 +118,6 @@ module PlayerScoreData =
                 record)
 
 
-    let getEvents (incidentEvents:seq<IncidentEvent>) = 
-        [ "Goal"; "Pass"; "SubstitutionOn"; "SubstitutionOff"; "Card" ]
-        |> Seq.map (fun d -> let res = incidentEvents 
-                                        |> Seq.filter (fun e -> e.Type.DisplayName = d)
-                             (d, res))
 
     let mapPlayerData fixtureId (ownIncidentEvents:IDictionary<string,seq<IncidentEvent>>) (opponentIncidentEvents:IDictionary<string,seq<IncidentEvent>>) 
                       playerId (playerData:PlayerData) =
@@ -223,11 +218,17 @@ module PlayerScoreData =
 
 
 
-    let getDataForMatchReport (playerCache:PlayerStaticData.Cache) (fixtureCache:FixtureData.Cache) (report:MatchReport) = async {
-        let fixture = fixtureCache.PublicData |> Seq.find (fun x -> x.WhoScoredId = report.WhoScoredId)
-        let homeIncidentEvents = report.Home.IncidentEvents |> getEvents |> dict
-        let awayIncidentEvents = report.Away.IncidentEvents |> getEvents |> dict
+    let getDataForMatchReport (playerCache:PlayerStaticData.Cache) (fixtureCache:FixtureData.Cache) (report:MatchReport) = 
+        let getEvents (incidentEvents:seq<IncidentEvent>) = 
+            [ "Goal"; "Pass"; "SubstitutionOn"; "SubstitutionOff"; "Card" ]
+            |> Seq.map (fun d -> (d, (incidentEvents |> Seq.filter (fun e -> e.Type.DisplayName = d))))
 
+        let fixture = fixtureCache.PublicData |> Seq.find (fun x -> x.WhoScoredId = report.WhoScoredId)
+
+        let homeIncidentEvents = report.Home.IncidentEvents |> getEvents |> dict
+
+        let awayIncidentEvents = report.Away.IncidentEvents |> getEvents |> dict
+        
         let homePlayerMapper (player:PlayerData) = 
             let internalPlayer = playerCache.PublicData |> Seq.tryFind (fun x -> x.WhoScoredId = player.PlayerId)
             match internalPlayer with
@@ -254,8 +255,6 @@ module PlayerScoreData =
         
         let awayPlayers = report.Away.Players |> map awayPlayerMapper
         let homePlayers = report.Home.Players |> map homePlayerMapper
-        
-        return Array.concat [ homePlayers; awayPlayers ]
-    }
+        Array.concat [ homePlayers; awayPlayers ]
 
 

@@ -120,7 +120,7 @@ module MatchReport =
         | _ -> let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType ids
                return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_UpdateWhoScoredId" [| sqlParameter |]
     }
-
+    
     
 
     let downloadDataAsync (id:int) = 

@@ -14,9 +14,6 @@ module WhoScoredCalendarData =
 
 
     let updateFixtureIdsAsync (fixtureCache:FixtureData.Cache) (whoScoredCalendarData:CalendarData) = async {
-//        let tryFindInternalId (calendarData:CalendarData) (fixtureData:seq<FixtureData.T>) =
-//            fixtureData |> Seq.tryFind (fun d -> d.HomeTeamId = calendarData.InternalHomeId && d.AwayTeamId = calendarData.InternalAwayId)
-
         let missingIdFixtures = fixtureCache.PublicData |> Seq.filter (fun t -> t.WhoScoredId = -1)
 
         if (missingIdFixtures |> Seq.length = 0) then return ()
@@ -28,16 +25,6 @@ module WhoScoredCalendarData =
         | Some x -> let data = [| (x.Id, whoScoredCalendarData.WhoScoredId) |]
                     let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType data
                     return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_UpdateWhoScoredId" [| sqlParameter |]
-//        let updateableFixtures = whoScoredCalendarData 
-//                                 |> Seq.map (fun d -> let internalId = missingIdFixtures |> tryFindInternalId d
-//                                                      match internalId with
-//                                                      | Some x -> Some (x.Id, d.WhoScoredId)
-//                                                      | None -> None)
-//                                 |> Seq.toArray
-//                                 |> Array.filter (fun x -> x.IsSome)
-//                                 |> Array.map (fun x -> x.Value)
-//        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType updateableFixtures
-//        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_UpdateWhoScoredId" [| sqlParameter |]
     }
 
 
@@ -49,14 +36,14 @@ module WhoScoredCalendarData =
                     .Replace("'", "")
                     .Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
 
-        let homeId = Convert.ToInt32(data.[0])
-        let awayId = Convert.ToInt32(data.[1])
+        let homeId, homeName = Convert.ToInt32(data.[0]), data.[2]
+        let awayId, awayName = Convert.ToInt32(data.[1]), data.[3]
         let dateValues = data.[4].Split([| '/'; ':'; ' ' |], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun x -> int x)
         let dateObject = new DateTime(dateValues.[2], dateValues.[1], dateValues.[0], dateValues.[3], dateValues.[4], dateValues.[5])
         let gmtTimeZone = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time")
         let dateUtc = TimeZoneInfo.ConvertTimeToUtc(dateObject, gmtTimeZone)
-        let homeTeam = teamCache.PublicData |> Seq.tryFind (fun t -> t.WhoScoredId = homeId)
-        let awayTeam = teamCache.PublicData |> Seq.tryFind (fun t -> t.WhoScoredId = awayId)
+        let homeTeam = teamCache.PublicData |> Seq.tryFind (fun t -> t.Name = homeName || t.FullName = homeName)
+        let awayTeam = teamCache.PublicData |> Seq.tryFind (fun t -> t.Name = awayName || t.FullName = awayName)
         
         match homeTeam, awayTeam with
         | Some home, Some away -> Success 

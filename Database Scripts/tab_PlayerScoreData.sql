@@ -2,6 +2,7 @@
 	fId INT NOT NULL IDENTITY(1,1),
 	frFixtureId INT NOT NULL,
 	frPlayerId INT NOT NULL,
+	fTotalPoints INT,
 	fMinutesPlayed INT,
 	fGoalsScored INT,
 	fAssists INT,

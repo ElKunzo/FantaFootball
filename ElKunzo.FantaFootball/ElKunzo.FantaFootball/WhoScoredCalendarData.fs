@@ -2,31 +2,42 @@
 
 open System
 open System.Threading
+
 open ElKunzo.FantaFootball.External.WhoScoredTypes
 open ElKunzo.FantaFootball.Internal
 open ElKunzo.FantaFootball.DataAccess
 
 module WhoScoredCalendarData = 
+
     let PrematchMatchDataUrlTemplate = "https://www.whoscored.com/Matches/{0}";
 
 
 
-    let updateFixtureIdsAsync (fixtureCache:FixtureData.Cache) (whoScoredCalendarData:seq<CalendarData>) = async {
-        let tryFindInternalId (calendarData:CalendarData) (fixtureData:seq<FixtureData.T>) =
-            fixtureData |> Seq.tryFind (fun d -> d.HomeTeamId = calendarData.InternalHomeId && d.AwayTeamId = calendarData.InternalAwayId)
+    let updateFixtureIdsAsync (fixtureCache:FixtureData.Cache) (whoScoredCalendarData:CalendarData) = async {
+//        let tryFindInternalId (calendarData:CalendarData) (fixtureData:seq<FixtureData.T>) =
+//            fixtureData |> Seq.tryFind (fun d -> d.HomeTeamId = calendarData.InternalHomeId && d.AwayTeamId = calendarData.InternalAwayId)
 
         let missingIdFixtures = fixtureCache.PublicData |> Seq.filter (fun t -> t.WhoScoredId = -1)
+
         if (missingIdFixtures |> Seq.length = 0) then return ()
-        let updateableFixtures = whoScoredCalendarData 
-                                 |> Seq.map (fun d -> let internalId = missingIdFixtures |> tryFindInternalId d
-                                                      match internalId with
-                                                      | Some x -> Some (x.Id, d.WhoScoredId)
-                                                      | None -> None)
-                                 |> Seq.toArray
-                                 |> Array.filter (fun x -> x.IsSome)
-                                 |> Array.map (fun x -> x.Value)
-        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType updateableFixtures
-        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_UpdateWhoScoredId" [| sqlParameter |]
+        let internalId = missingIdFixtures 
+                         |> Seq.tryFind (fun d -> d.HomeTeamId = whoScoredCalendarData.InternalHomeId && d.AwayTeamId = whoScoredCalendarData.InternalAwayId)
+
+        match internalId with
+        | None -> return (Failure "No missing Ids found")
+        | Some x -> let data = [| (x.Id, whoScoredCalendarData.WhoScoredId) |]
+                    let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType data
+                    return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_UpdateWhoScoredId" [| sqlParameter |]
+//        let updateableFixtures = whoScoredCalendarData 
+//                                 |> Seq.map (fun d -> let internalId = missingIdFixtures |> tryFindInternalId d
+//                                                      match internalId with
+//                                                      | Some x -> Some (x.Id, d.WhoScoredId)
+//                                                      | None -> None)
+//                                 |> Seq.toArray
+//                                 |> Array.filter (fun x -> x.IsSome)
+//                                 |> Array.map (fun x -> x.Value)
+//        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType updateableFixtures
+//        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_UpdateWhoScoredId" [| sqlParameter |]
     }
 
 
@@ -61,7 +72,7 @@ module WhoScoredCalendarData =
 
 
 
-    let downloadDataAsync (baseUrl:string) (teamIdCache:TeamStaticData.Cache) (id:int) = 
+    let downloadDataAsync (baseUrl:string) (teamIdCache:TeamStaticData.Cache) (fixtureDataCache:FixtureData.Cache) (id:int) = 
         async {
             let url = String.Format(baseUrl, id)
             //added sleep so that who scored does not block 
@@ -74,13 +85,14 @@ module WhoScoredCalendarData =
             | Success x -> let fixtureData = parseCalendarData teamIdCache x
                            match fixtureData with
                            | Failure y -> return Failure y
-                           | Success y -> return Success { y with WhoScoredId = id }
+                           | Success y -> return! { y with WhoScoredId = id }
+                                                  |> updateFixtureIdsAsync fixtureDataCache
         }
 
 
 
     let updateWhoScoredFixtureIdsAsync (startingMatchId:int) (fixtureDataCache:FixtureData.Cache) (teamIdCache:TeamStaticData.Cache) = async {
-        let downloader = downloadDataAsync PrematchMatchDataUrlTemplate teamIdCache
+        let downloader = downloadDataAsync PrematchMatchDataUrlTemplate teamIdCache fixtureDataCache
         let knownWhoScoredIds = fixtureDataCache.PublicData |> Seq.filter (fun f -> f.WhoScoredId <> -1) |> Seq.map (fun f -> f.WhoScoredId)
         let possibleIds = new ResizeArray<int>(seq { for i in startingMatchId .. (startingMatchId + 379) do yield i })
         for i in knownWhoScoredIds do possibleIds.Remove i |> ignore
@@ -94,11 +106,9 @@ module WhoScoredCalendarData =
                              |> Common.asyncThrottle 2
                              |> Async.Parallel
                              |> Async.RunSynchronously
-            let availableCalendarData = seq { for i in resultList do match i with | Success x -> yield Some x | Failure x -> yield None }
-                                        |> Seq.filter (fun x -> x.IsSome)
-                                        |> Seq.map (fun x -> x.Value)
-
-            match (Seq.length availableCalendarData) with
-            | 0 -> return Failure "No WhoScored Calendar Data found"
-            | _ -> return! updateFixtureIdsAsync fixtureDataCache availableCalendarData
+            let successFulUpdates = resultList |> Seq.filter (fun r -> isSuccess r)
+            let unsuccessFulUpdates = resultList |> Seq.filter (fun r -> not(isSuccess r))
+            match (Seq.length unsuccessFulUpdates) with
+            | 0 -> return Success ()
+            | _ -> return Failure "Could not apply some calendar data"
     }

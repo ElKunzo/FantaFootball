@@ -10,6 +10,10 @@ open ElKunzo.FantaFootball.DataAccess
 open ElKunzo.FantaFootball.External.FootballDataTypes
 
 module TeamStaticData = 
+
+    let competitionUrl = "http://api.football-data.org/v1/competitions/438"
+
+
     
     type T = {
         Id : int;
@@ -85,11 +89,11 @@ module TeamStaticData =
     let mapFromExternal (cache:Cache) (extTeam:Team) = 
         let footballDataId = extTeam._Links.Self.Href.Split('/') |> Seq.last |> int
         let known = cache.PublicData |> Seq.tryFind (fun t -> t.FootballDataId = footballDataId)
-        
+
         {
             Id = match known with | None -> -1 | Some x -> x.Id; 
             FootballDataId = footballDataId;
-            WhoScoredId = -1;
+            WhoScoredId = match known with | None -> -1 | Some x -> x.WhoScoredId; 
             Name = extTeam.ShortName;
             FullName = extTeam.Name;
             Code = (mapNullString extTeam.Code);
@@ -115,7 +119,7 @@ module TeamStaticData =
 
 
 
-    let updateDataAsync teamCache competitionUrl = async {
+    let updateDataAsync teamCache = async {
         let! teamData = downloadDataAsync competitionUrl
 
         match teamData with

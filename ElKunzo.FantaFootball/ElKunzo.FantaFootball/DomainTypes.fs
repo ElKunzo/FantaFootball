@@ -7,6 +7,8 @@ module DomainTypes =
         | Success of 'TSuccess
         | Failure of 'TFailure
 
+
+
     let isSuccess (result:OperationResult<'a,'b>) = 
         match result with
         | Success x -> true

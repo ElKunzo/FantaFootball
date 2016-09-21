@@ -14,7 +14,7 @@ module DatabaseDataAccess =
 
 
 
-    let databaseConnectionString = "Server=tcp:localhost,1433;Integrated Security=SSPI;Database=ElKunzoFantaFootball;Timeout=15;Max Pool Size=500"
+    let databaseConnectionString = "Server=tcp:localhost,1433;Integrated Security=SSPI;Database=ElKunzoFantasy;Timeout=15;Max Pool Size=500"
 
 
 

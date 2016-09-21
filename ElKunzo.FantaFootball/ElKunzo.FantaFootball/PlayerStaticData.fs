@@ -12,6 +12,10 @@ open ElKunzo.FantaFootball.External.FootballDataTypes
 
 module PlayerStaticData = 
 
+    let urlTemplate = "http://api.football-data.org/v1/teams/{0}/players"
+
+
+
     type T = {
         Id : int;
         WhoScoredId : int;
@@ -189,8 +193,7 @@ module PlayerStaticData =
 
 
 
-    let updateDataForTeamAsync urlTemplate (playerCache:Cache) (team:TeamStaticData.T) = async {
-        printfn "Processing team: %s" team.FullName
+    let updateDataForTeamAsync (playerCache:Cache) (team:TeamStaticData.T) = async {
         return! String.Format(urlTemplate, team.FootballDataId)
                 |> downloadDataForTeamAsync |> Async.RunSynchronously
                 |> mapFromExternal playerCache team.Id

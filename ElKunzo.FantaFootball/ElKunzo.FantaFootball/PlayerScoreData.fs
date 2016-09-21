@@ -29,6 +29,8 @@ module PlayerScoreData =
         OwnGoals : int;
     }
 
+
+
     type Cache (spName, mappingFunction, refreshInterval) =
         inherit BaseCacheWithRefreshTimer<T>(spName, mappingFunction, refreshInterval)
 

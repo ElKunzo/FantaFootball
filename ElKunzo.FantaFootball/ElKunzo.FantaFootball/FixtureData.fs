@@ -12,6 +12,10 @@ open ElKunzo.FantaFootball.External.FootballDataTypes
 
 module FixtureData = 
 
+    let competitionUrl = "http://api.football-data.org/v1/competitions/438"
+
+
+
     type T = {
         Id : int;
         WhoScoredId : int;
@@ -148,7 +152,7 @@ module FixtureData =
 
 
 
-    let updateAsync teamCache fixtureCache competitionUrl = async {
+    let updateAsync teamCache fixtureCache = async {
         let! externalFixtures = downloadDataAsync competitionUrl
 
         match externalFixtures with

@@ -2,6 +2,7 @@
 
 open System
 open System.Data
+open System.Net
 open System.Net.Http
 open System.Collections.Generic
 open Microsoft.SqlServer.Server
@@ -77,7 +78,9 @@ module Common =
 
 
     let buildDefaultHttpClient () = 
+        //ServicePointManager.SecurityProtocol <- SecurityProtocolType.Tls12
         let client = new HttpClient()
+        //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/4.0 (Compatible; Windows NT 5.1; MSIE 6.0) (Compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)")
         client
 
 
@@ -129,6 +132,8 @@ module Common =
                                     | Choice2Of2 exn  -> raise exn
                         }
             }
+
+
 
     let rnd = System.Random()
     let genRandomNumber () = rnd.Next (500, 5000)

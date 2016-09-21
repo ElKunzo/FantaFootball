@@ -9,6 +9,10 @@ open ElKunzo.FantaFootball.External.WhoScoredTypes
 
 module MatchReport = 
 
+    let urlTemplate = "https://www.whoscored.com/Matches/{0}/Live";
+
+
+
     let parseMatchReport (jsonString:string) = 
         try
             let a = jsonString.Split([| "var matchCentreData = " |], StringSplitOptions.RemoveEmptyEntries).[1]
@@ -51,7 +55,6 @@ module MatchReport =
             | "ML" | "MC" | "MR" -> Position.Midfielder
             | "F" | "Forward" -> Position.Forward
             | _ -> Position.Unknown
-
 
         {
             Id = -1;
@@ -99,13 +102,13 @@ module MatchReport =
                                           | None -> let known2 = updateablePlayers |> Seq.tryFind (fun p -> compareJerseyNumber p.JerseyNumber externalPlayer.ShirtNo)
                                                     match known2 with
                                                     | Some x -> Some (x.Id, externalPlayer.PlayerId)
-                                                    | None -> printfn "Player %s (%s) not in Database." externalPlayer.Name externalPlayer.Position; Some (-1, externalPlayer.PlayerId))
+                                                    | None -> Some (-1, externalPlayer.PlayerId))
             let intermediateResult = result |> Seq.filter (fun x -> x.IsSome) |> Seq.map (fun x -> x.Value) |> Seq.toArray
             let knownUpdateablePlayers = intermediateResult |> Seq.filter (fun (x, _) -> x <> -1)
             let remainingUnknownPlayers = intermediateResult 
                                           |> Seq.filter (fun (x, _) -> x = -1)
                                           |> Seq.map (fun (_, id) -> externalPlayers |> Seq.find (fun x -> x.PlayerId = id) |> mapPlayerToInternal team)
-            let! result = PlayerStaticData.persistAsync "usp_PlayerStaticData_InsertWhoScored" (Success remainingUnknownPlayers)
+            do! PlayerStaticData.persistAsync "usp_PlayerStaticData_InsertWhoScored" (Success remainingUnknownPlayers) |> Async.Ignore
             return knownUpdateablePlayers |> Seq.toArray
         }
 
@@ -120,9 +123,9 @@ module MatchReport =
 
     
 
-    let downloadDataAsync (baseUrl:string) (id:int) = 
+    let downloadDataAsync (id:int) = 
         async {
-            let url = String.Format(baseUrl, id)
+            let url = String.Format(urlTemplate, id)
             let! result = downloadAsync url buildDefaultHttpClient
 
             match result with 

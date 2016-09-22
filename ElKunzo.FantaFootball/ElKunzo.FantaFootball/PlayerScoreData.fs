@@ -129,14 +129,15 @@ module PlayerScoreData =
             | true -> [| for i in 0 .. 90 do yield i |]
             | false when substitutedOn.IsSome -> [| for i in (90 - substitutedOn.Value.Minute) .. 90 do yield i |]
             | false -> [| 0 |]
-        let minutesPlayed = minutesOnPitch |> Array.length
+        let minutesPlayed = max 0 ((minutesOnPitch |> Array.last) - (minutesOnPitch |> Array.head))
         let goalsScored = ownIncidentEvents.Item("Goal") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
         let assists = ownIncidentEvents.Item("Assist") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
         let goalsConceded = opponentIncidentEvents.Item("Goal") |> Seq.filter (fun x -> Array.exists (fun m -> m = x.Minute) minutesOnPitch) |> Seq.length
+        let ownGoals = ownIncidentEvents.Item("OwnGoal") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
         let cleanSheet = (goalsConceded = 0) && (minutesPlayed > 60)
         let shotsSaved = if (isNull (box playerData.Stats.TotalSaves)) then 0 else playerData.Stats.TotalSaves |> Map.toSeq |> Seq.sumBy (fun (_,v) -> v) |> int
-        let yellowCards = ownIncidentEvents.Item("YellowCard") |> Seq.length
-        let redCard = ownIncidentEvents.Item("RedCard") |> Seq.length
+        let yellowCards = ownIncidentEvents.Item("YellowCard") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
+        let redCard = ownIncidentEvents.Item("RedCard") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
                           
         {
             Id = -1;
@@ -153,7 +154,7 @@ module PlayerScoreData =
             GoalsConceded = goalsConceded;
             YellowCards = yellowCards;
             RedCard = redCard;
-            OwnGoals = 0;
+            OwnGoals = ownGoals;
         }
 
 
@@ -235,20 +236,19 @@ module PlayerScoreData =
 
         let getEvents (opponentIncidentEvents:seq<IncidentEvent>) (ownIncidentEvents:seq<IncidentEvent>) = 
             let goal = ("Goal", getGoals ownIncidentEvents opponentIncidentEvents)
+            let ownGoal = ("OwnGoal", ownIncidentEvents |> findEventWithQualifier "Goal" "OwnGoal")
             let pass = ("Assist", ownIncidentEvents |> findEvent "Pass")
             let subOn = ("SubOn", ownIncidentEvents |> findEvent "SubstitutionOn")
             let subOff = ("SubOff", ownIncidentEvents |> findEvent "SubstitutionOff")
             let yellowCard = ("YellowCard", ownIncidentEvents |> findEventWithQualifier "Card" "Yellow")
             let redCard = ("RedCard", ownIncidentEvents |> findEventWithQualifier "Card" "Red")
             
-            [ goal; pass; subOn; subOff; yellowCard; redCard ]
+            [ goal; ownGoal; pass; subOn; subOff; yellowCard; redCard ]
 
         let fixture = fixtureCache.PublicData |> Seq.find (fun x -> x.WhoScoredId = report.WhoScoredId)
-
         let homeIncidentEvents = report.Home.IncidentEvents |> getEvents report.Away.IncidentEvents |> dict
-
         let awayIncidentEvents = report.Away.IncidentEvents |> getEvents report.Home.IncidentEvents |> dict
-        
+
         let homePlayerMapper (player:PlayerData) = 
             let internalPlayer = playerCache.PublicData |> Seq.tryFind (fun x -> x.WhoScoredId = player.PlayerId)
             match internalPlayer with
@@ -282,7 +282,6 @@ module PlayerScoreData =
         
         let awayPlayers = report.Away.Players |> map awayPlayerMapper
         let homePlayers = report.Home.Players |> map homePlayerMapper
-
         let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType (Array.concat [ homePlayers; awayPlayers ])
         return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerScoreData_Update" [| sqlParameter |]
     }

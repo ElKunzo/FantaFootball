@@ -128,11 +128,11 @@ module PlayerStaticData =
             internalPlayer.DateOfBirth = externalPlayer.DateOfBirth &&
             internalPlayer.FullName = (externalPlayer.Name |> getName)
 
-        let mapJerseyNumber numberAsString =
+        let mapJerseyNumber name numberAsString =
             let opt = (mapNullString numberAsString)
             match opt with
             | None -> None
-            | Some x -> Some (int x)
+            | Some x -> if name = "Luca Ceppitelli" then Some (23) else Some (int x)
 
         let mapContractUntil contractUntilAsString = 
             let opt = (mapNullString contractUntilAsString)
@@ -153,7 +153,7 @@ module PlayerStaticData =
             WhoScoredId = whoScoredId;
             FootballDataTeamId = footballDataTeamId;
             TeamId = teamId;
-            JerseyNumber = (mapJerseyNumber extPlayer.JerseyNumber);
+            JerseyNumber = (mapJerseyNumber (extPlayer.Name |> getName) extPlayer.JerseyNumber);
             Position = (mapPosition extPlayer.Position);
             Name = extPlayer.Name |> getName;
             FullName = extPlayer.Name |> getName;

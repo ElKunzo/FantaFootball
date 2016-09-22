@@ -86,23 +86,23 @@ module MatchReport =
                | null -> false
                | _ -> true
 
+        let getInternalPlayer teamId (availablePlayers:seq<PlayerStaticData.T>) (externalPlayer:PlayerData) = 
+            let processed = availablePlayers |> Seq.tryFind (fun p -> p.WhoScoredId = externalPlayer.PlayerId)
+            match processed with
+            | Some x -> None
+            | None -> match (availablePlayers |> Seq.tryFind (fun p -> p.Name = externalPlayer.Name || p.FullName = externalPlayer.Name)) with
+                      | Some x -> Some (x.Id, externalPlayer.PlayerId)
+                      | None -> match (availablePlayers |> Seq.tryFind (fun p -> p.TeamId = teamId && compareJerseyNumber p.JerseyNumber externalPlayer.ShirtNo)) with
+                                | None -> Some (-1, externalPlayer.PlayerId)
+                                | Some x -> Some (x.Id, externalPlayer.PlayerId)
+
         let getUpdateablePlayerIds teamId (externalPlayers:seq<PlayerData>) = async {
             let team = teamDataCache.PublicData |> Seq.find (fun x -> x.WhoScoredId = teamId)
-            let updateablePlayers = playerCache.PublicData |> Seq.filter (fun p -> p.TeamId = team.Id)
+            let updateablePlayers = playerCache.PublicData //|> Seq.filter (fun p -> p.TeamId = team.Id)
             let result = 
                 externalPlayers 
                 |> Seq.filter (fun externalPlayer -> wasPlayerOnPitch externalPlayer)
-                |> Seq.map (fun externalPlayer -> 
-                                let processed = updateablePlayers |> Seq.tryFind (fun p -> p.WhoScoredId = externalPlayer.PlayerId)
-                                match processed with
-                                | Some x -> None
-                                | None -> let known = updateablePlayers |> Seq.tryFind (fun p -> p.Name = externalPlayer.Name)
-                                          match known with
-                                          | Some x -> Some (x.Id, externalPlayer.PlayerId)
-                                          | None -> let known2 = updateablePlayers |> Seq.tryFind (fun p -> compareJerseyNumber p.JerseyNumber externalPlayer.ShirtNo)
-                                                    match known2 with
-                                                    | Some x -> Some (x.Id, externalPlayer.PlayerId)
-                                                    | None -> Some (-1, externalPlayer.PlayerId))
+                |> Seq.map (fun externalPlayer -> externalPlayer |> getInternalPlayer team.Id updateablePlayers)
             let intermediateResult = result |> Seq.filter (fun x -> x.IsSome) |> Seq.map (fun x -> x.Value) |> Seq.toArray
             let knownUpdateablePlayers = intermediateResult |> Seq.filter (fun (x, _) -> x <> -1)
             let remainingUnknownPlayers = intermediateResult 

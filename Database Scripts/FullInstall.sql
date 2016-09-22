@@ -2,88 +2,6 @@ IF NOT EXISTS(SELECT 1 FROM sys.sysusers WHERE name = N'FantaFootballRole' AND i
 	CREATE ROLE FantaFootballRole;
 GO
 
-CREATE TABLE tab_FixtureStatus(
-	fId INT NOT NULL IDENTITY(1,1),
-	fStatus NVARCHAR(20),
-	PRIMARY KEY (fId)
-);
-
-INSERT INTO dbo.tab_FixtureStatus VALUES ('Scheduled');
-INSERT INTO dbo.tab_FixtureStatus VALUES ('Timed');
-INSERT INTO dbo.tab_FixtureStatus VALUES ('InPlay');
-INSERT INTO dbo.tab_FixtureStatus VALUES ('Finished');
-INSERT INTO dbo.tab_FixtureStatus VALUES ('Postponed');
-INSERT INTO dbo.tab_FixtureStatus VALUES ('Canceled');
-INSERT INTO dbo.tab_FixtureStatus VALUES ('Unknown');
-
-
-CREATE TABLE tab_Positions(
-	fId INT NOT NULL IDENTITY(1,1),
-	fPositionName NVARCHAR(50),
-	PRIMARY KEY (fId)
-);
-
-INSERT INTO dbo.tab_Positions VALUES ('Goalkeeper');
-INSERT INTO dbo.tab_Positions VALUES ('Defender');
-INSERT INTO dbo.tab_Positions VALUES ('Midfielder');
-INSERT INTO dbo.tab_Positions VALUES ('Forward');
-INSERT INTO dbo.tab_Positions VALUES ('Unknown');
-
-
-CREATE TABLE tab_TeamData(
-	fId INT NOT NULL IDENTITY(1,1),
-	fFootballDataId INT NOT NULL,
-	fWhoScoredId INT NOT NULL,
-	fName NVARCHAR(500),
-	fFullName NVARCHAR(500),
-	fCode NVARCHAR(5),
-    fSquadMarketValue INT,
-    fCrestUrl NVARCHAR(500),
-	fLastUpdatedUtc DATETIME,
-	PRIMARY KEY (fId)
-);
-
-
-CREATE TABLE tab_PlayerStaticData(
-	fId INT NOT NULL IDENTITY(1,1),
-	fWhoScoredId INT,
-	fFootballDataTeamId INT,
-	frTeamId INT NOT NULL,
-	fJerseyNumber INT,
-	frPosition INT NOT NULL,
-	fName NVARCHAR(500),
-	fFullName NVARCHAR(500),
-	fDateOfBirth DATETIME,
-	fNationality NVARCHAR(50),
-	fContractUntil DATETIME,
-	fMarketValue INT,
-	fLastUpdatedUtc DATETIME,
-	PRIMARY KEY (fId),
-	FOREIGN KEY (frTeamId) REFERENCES tab_TeamData(fId),
-	FOREIGN KEY (frPosition) REFERENCES tab_Positions(fId)
-);
-
-
-CREATE TABLE tab_FixtureData(
-	fId INT NOT NULL IDENTITY(1,1),
-	fWhoScoredId INT,
-	fFootballDataId INT,
-	frStatusId INT NOT NULL,
-	fKickOffUtc DATETIME,
-	fMatchDay INT,
-	frHomeTeamId INT NOT NULL,
-	frAwayTeamId INT NOT NULL,
-	fHomeScore INT,
-	fAwayScore INT,
-	fLastUpdatedUtc DATETIME,
-	PRIMARY KEY (fId),
-	FOREIGN KEY (frStatusId) REFERENCES tab_FixtureStatus(fId),
-	FOREIGN KEY (frHomeTeamId) REFERENCES tab_TeamData(fId),
-	FOREIGN KEY (frAwayTeamId) REFERENCES tab_TeamData(fId),
-);
-
-
-
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE is_table_type = 1 AND name = N'FixtureDataType')
 	CREATE TYPE dbo.FixtureDataType AS TABLE(
 	Id INT NOT NULL,
@@ -101,6 +19,32 @@ GO
 
 GRANT EXECUTE ON TYPE::dbo.FixtureDataType TO FantaFootballRole;
 GO
+
+
+
+IF NOT EXISTS (SELECT 1 FROM sys.types WHERE is_table_type = 1 AND name = N'PlayerScoreDataType')
+	CREATE TYPE dbo.PlayerScoreDataType AS TABLE(
+	Id INT NOT NULL,
+	FixtureId INT NOT NULL,
+	PlayerId INT NOT NULL,
+	TotalPoints INT,
+	MinutesPlayed INT,
+	GoalsScored INT,
+	Assists INT,
+	CleanSheet BIT,
+	ShotsSaved INT,
+	PenaltiesSaved INT,
+	PenaltiesMissed INT,
+	GoalsConceded INT,
+	YellowCards INT,
+	RedCard INT,
+	OwnGoals INT
+)
+GO
+
+GRANT EXECUTE ON TYPE::dbo.PlayerScoreDataType TO FantaFootballRole;
+GO
+
 
 
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE is_table_type = 1 AND name = N'PlayerStaticDataType')
@@ -124,6 +68,7 @@ GRANT EXECUTE ON TYPE::dbo.PlayerStaticDataType TO FantaFootballRole;
 GO
 
 
+
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE is_table_type = 1 AND name = N'TeamDataType')
 	CREATE TYPE dbo.TeamDataType AS TABLE(
 	Id INT NOT NULL,
@@ -141,6 +86,7 @@ GRANT EXECUTE ON TYPE::dbo.TeamDataType TO FantaFootballRole;
 GO
 
 
+
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE is_table_type = 1 AND name = N'WhoScoredIdType')
 	CREATE TYPE dbo.WhoScoredIdType AS TABLE(
 	Id INT NOT NULL,
@@ -150,6 +96,118 @@ GO
 
 GRANT EXECUTE ON TYPE::dbo.WhoScoredIdType TO FantaFootballRole;
 GO
+
+
+
+CREATE TABLE tab_Positions(
+	fId INT NOT NULL IDENTITY(1,1),
+	fPositionName NVARCHAR(50),
+	PRIMARY KEY (fId)
+);
+
+INSERT INTO dbo.tab_Positions VALUES ('Goalkeeper');
+INSERT INTO dbo.tab_Positions VALUES ('Defender');
+INSERT INTO dbo.tab_Positions VALUES ('Midfielder');
+INSERT INTO dbo.tab_Positions VALUES ('Forward');
+INSERT INTO dbo.tab_Positions VALUES ('Unknown');
+
+
+
+CREATE TABLE tab_FixtureStatus(
+	fId INT NOT NULL IDENTITY(1,1),
+	fStatus NVARCHAR(20),
+	PRIMARY KEY (fId)
+);
+
+INSERT INTO dbo.tab_FixtureStatus VALUES ('Scheduled');
+INSERT INTO dbo.tab_FixtureStatus VALUES ('Timed');
+INSERT INTO dbo.tab_FixtureStatus VALUES ('InPlay');
+INSERT INTO dbo.tab_FixtureStatus VALUES ('Finished');
+INSERT INTO dbo.tab_FixtureStatus VALUES ('Postponed');
+INSERT INTO dbo.tab_FixtureStatus VALUES ('Canceled');
+INSERT INTO dbo.tab_FixtureStatus VALUES ('Unknown');
+
+
+
+CREATE TABLE tab_TeamData(
+	fId INT NOT NULL IDENTITY(1,1),
+	fFootballDataId INT NOT NULL,
+	fWhoScoredId INT NOT NULL,
+	fName NVARCHAR(500),
+	fFullName NVARCHAR(500),
+	fCode NVARCHAR(5),
+    fSquadMarketValue INT,
+    fCrestUrl NVARCHAR(500),
+	fLastUpdatedUtc DATETIME,
+	PRIMARY KEY (fId)
+);
+
+
+
+CREATE TABLE tab_FixtureData(
+	fId INT NOT NULL IDENTITY(1,1),
+	fWhoScoredId INT,
+	fFootballDataId INT,
+	frStatusId INT NOT NULL,
+	fKickOffUtc DATETIME,
+	fMatchDay INT,
+	frHomeTeamId INT NOT NULL,
+	frAwayTeamId INT NOT NULL,
+	fHomeScore INT,
+	fAwayScore INT,
+	fLastUpdatedUtc DATETIME,
+	PRIMARY KEY (fId),
+	FOREIGN KEY (frStatusId) REFERENCES tab_FixtureStatus(fId),
+	FOREIGN KEY (frHomeTeamId) REFERENCES tab_TeamData(fId),
+	FOREIGN KEY (frAwayTeamId) REFERENCES tab_TeamData(fId),
+);
+
+
+
+
+CREATE TABLE tab_PlayerStaticData(
+	fId INT NOT NULL IDENTITY(1,1),
+	fWhoScoredId INT,
+	fFootballDataTeamId INT,
+	frTeamId INT NOT NULL,
+	fJerseyNumber INT,
+	frPosition INT NOT NULL,
+	fName NVARCHAR(500),
+	fFullName NVARCHAR(500),
+	fDateOfBirth DATETIME,
+	fNationality NVARCHAR(50),
+	fContractUntil DATETIME,
+	fMarketValue INT,
+	fLastUpdatedUtc DATETIME,
+	PRIMARY KEY (fId),
+	FOREIGN KEY (frTeamId) REFERENCES tab_TeamData(fId),
+	FOREIGN KEY (frPosition) REFERENCES tab_Positions(fId)
+);
+
+
+
+CREATE TABLE tab_PlayerScoreData(
+	fId INT NOT NULL IDENTITY(1,1),
+	frFixtureId INT NOT NULL,
+	frPlayerId INT NOT NULL,
+	fTotalPoints INT,
+	fMinutesPlayed INT,
+	fGoalsScored INT,
+	fAssists INT,
+	fCleanSheet BIT,
+	fShotsSaved INT,
+	fPenaltiesSaved INT,
+	fPenaltiesMissed INT,
+	fGoalsConceded INT,
+	fYellowCards INT,
+	fRedCard INT,
+	fOwnGoals INT,
+	fLastUpdatedUtc DATETIME,
+	PRIMARY KEY (fId),
+	FOREIGN KEY (frFixtureId) REFERENCES tab_FixtureData(fId),
+	FOREIGN KEY (frPlayerId) REFERENCES tab_PlayerStaticData(fId)
+);
+
 
 
 IF OBJECT_ID(N'dbo.usp_FixtureData_Get','P') IS NULL
@@ -185,6 +243,7 @@ AS
 	return 0;
 
 GO
+
 
 
 IF OBJECT_ID(N'dbo.usp_FixtureData_Update','P') IS NULL
@@ -268,6 +327,103 @@ BEGIN
 	RETURN 0;
 END
 GO
+
+
+
+
+IF OBJECT_ID(N'dbo.usp_PlayerScoreData_Get','P') IS NULL
+	EXEC('CREATE PROCEDURE dbo.usp_PlayerScoreData_Get AS SELECT NULL');
+GO
+
+GRANT EXECUTE ON dbo.usp_PlayerScoreData_Get TO FantaFootballRole;
+GO
+
+ALTER PROCEDURE dbo.usp_PlayerScoreData_Get
+AS
+
+	set transaction isolation level read uncommitted
+	set nocount on
+	
+	select 
+		fId,
+		frFixtureId,
+		frPlayerId,
+		fTotalPoints,
+		fMinutesPlayed,
+		fGoalsScored,
+		fAssists,
+		fCleanSheet,
+		fShotsSaved,
+		fPenaltiesSaved,
+		fPenaltiesMissed,
+		fGoalsConceded,
+		fYellowCards,
+		fRedCard,
+		fOwnGoals
+	from
+		dbo.tab_PlayerScoreData
+
+	if @@ERROR <> 0
+		return -1;
+
+	return 0;
+
+GO
+
+
+
+
+IF OBJECT_ID(N'dbo.usp_PlayerScoreData_Update','P') IS NULL
+	EXEC('CREATE PROCEDURE dbo.usp_PlayerScoreData_Update AS SELECT NULL');
+GO
+
+GRANT EXECUTE ON dbo.usp_PlayerScoreData_Update TO FantaFootballRole;
+GO
+
+ALTER PROCEDURE dbo.usp_PlayerScoreData_Update
+(
+	@PlayerData dbo.PlayerScoreDataType READONLY
+)
+AS
+
+
+BEGIN
+	 SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+     SET NOCOUNT ON;
+
+	MERGE 
+		dbo.tab_PlayerScoreData AS TRG
+	USING
+		(SELECT Id, FixtureId, PlayerId, TotalPoints, MinutesPlayed, GoalsScored, Assists, CleanSheet, ShotsSaved, PenaltiesSaved, PenaltiesMissed, GoalsConceded, YellowCards, RedCard, OwnGoals FROM @PlayerData) AS SRC
+	ON
+		TRG.fId = SRC.Id
+	WHEN MATCHED THEN 
+		UPDATE SET  frFixtureId = SRC.FixtureId,
+					frPlayerId = SRC.PlayerId,
+					fTotalPoints = SRC.TotalPoints,
+					fMinutesPlayed = SRC.MinutesPlayed,
+					fGoalsScored = SRC.GoalsScored,
+					fAssists = SRC.Assists,
+					fCleanSheet = SRC.CleanSheet,
+					fShotsSaved = SRC.ShotsSaved,
+					fPenaltiesSaved = SRC.PenaltiesSaved,
+					fPenaltiesMissed = SRC.PenaltiesMissed,
+					fGoalsConceded = SRC.GoalsConceded,
+					fYellowCards = SRC.YellowCards,
+					fRedCard = SRC.RedCard,
+					fOwnGoals = SRC.OwnGoals,
+				    fLastUpdatedUtc = GETUTCDATE()
+	WHEN NOT MATCHED BY TARGET THEN
+		INSERT (frFixtureId, frPlayerId, fTotalPoints, fMinutesPlayed, fGoalsScored, fAssists, fCleanSheet, fShotsSaved, fPenaltiesSaved, fPenaltiesMissed, fGoalsConceded, fYellowCards, fRedCard, fOwnGoals, fLastUpdatedUtc)
+		VALUES (SRC.FixtureId, SRC.PlayerId, SRC.TotalPoints, SRC.MinutesPlayed, SRC.GoalsScored, SRC.Assists, SRC.CleanSheet, SRC.ShotsSaved, SRC.PenaltiesSaved, SRC.PenaltiesMissed, SRC.GoalsConceded, SRC.YellowCards, SRC.RedCard, SRC.OwnGoals, GETUTCDATE());
+
+	IF @@ERROR <> 0
+		RETURN -1;
+
+	RETURN 0;
+END
+GO
+
 
 
 
@@ -388,6 +544,7 @@ GO
 
 
 
+
 IF OBJECT_ID(N'dbo.usp_PlayerStaticData_UpdateWhoScoredId','P') IS NULL
 	EXEC('CREATE PROCEDURE dbo.usp_PlayerStaticData_UpdateWhoScoredId AS SELECT NULL');
 GO
@@ -422,6 +579,7 @@ BEGIN
 	RETURN 0;
 END
 GO
+
 
 
 
@@ -539,5 +697,6 @@ BEGIN
 	RETURN 0;
 END
 GO
+
 
 

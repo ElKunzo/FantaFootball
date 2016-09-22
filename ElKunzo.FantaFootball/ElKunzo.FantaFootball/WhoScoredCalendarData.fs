@@ -93,9 +93,9 @@ module WhoScoredCalendarData =
                              |> Common.asyncThrottle 2
                              |> Async.Parallel
                              |> Async.RunSynchronously
-            let successFulUpdates = resultList |> Seq.filter (fun r -> isSuccess r)
-            let unsuccessFulUpdates = resultList |> Seq.filter (fun r -> not(isSuccess r))
-            match (Seq.length unsuccessFulUpdates) with
+            let successfullUpdates = resultList |> Seq.filter (fun r -> isSuccess r)
+            let unsuccessfullUpdates = resultList |> Seq.filter (fun r -> not(isSuccess r))
+            match (Seq.length unsuccessfullUpdates) with
             | 0 -> return Success ()
             | _ -> return Failure "Could not apply some calendar data"
     }

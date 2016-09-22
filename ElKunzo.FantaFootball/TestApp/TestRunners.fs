@@ -9,26 +9,22 @@ open ElKunzo.FantaFootball.Internal
 
 module TestRunners = 
 
-    type Settings = AppSettings<"App.config">
-    let name = Settings.ConfigFileName
+//    type Settings = AppSettings<"App.config">
+//    let name = Settings.ConfigFileName
 
 
 
-    let UpdateTeamWhoScoredIds team = 
-        match team with
-        | Failure x -> Failure x
-        | Success x -> CacheRepository.Team.Update()
-                       let missingTeams = CacheRepository.Team.PublicData |> Seq.filter (fun x -> x.WhoScoredId = -1) |> Seq.length
-                       Success (sprintf "Done with Team Update: Missing Teams %i" missingTeams)
-
-
-
-    let UpdatePlayerWhoScoredIds players = 
-        match players with
-        | Failure x -> Failure x
-        | Success x -> CacheRepository.PlayerStatic.Update()
-                       let missingPlayers = CacheRepository.PlayerStatic.PublicData |> Seq.filter (fun x -> x.WhoScoredId = -1) |> Seq.length
-                       Success (sprintf "Done with Player Update: Missing Players %i" missingPlayers)
+    let UpdatePlayerScoreData (id) =
+        let matchReport = MatchReport.downloadDataAsync id |> Async.RunSynchronously
+        match matchReport with 
+        | Failure x -> printfn "Could not download match report: %s" x
+        | Success x -> MatchReport.updateTeamIdsAsync CacheRepository.Team x |> Async.RunSynchronously |> ignore
+                       CacheRepository.Team.Update()
+                       MatchReport.updatePlayerIdsAsync CacheRepository.PlayerStatic CacheRepository.Team x |> Async.RunSynchronously |> ignore
+                       CacheRepository.PlayerStatic.Update()
+                       PlayerScoreData.getDataForMatchReportAsync CacheRepository.PlayerScore CacheRepository.PlayerStatic CacheRepository.Fixture x |> Async.RunSynchronously |> ignore
+                       CacheRepository.PlayerScore.Update()
+                       printfn "\tDone game update for FixtureId %i: %s - %s" id x.Home.Name x.Away.Name
 
 
 
@@ -38,31 +34,7 @@ module TestRunners =
 
         for i in playedFixtureIds do
             Thread.Sleep(2000)
-            let matchReport = MatchReport.downloadDataAsync i |> Async.RunSynchronously
-            match matchReport with 
-            | Failure x -> printfn "Could not download match report: %s" x
-            | Success x -> 
-                let team = UpdateTeamWhoScoredIds (MatchReport.updateTeamIdsAsync CacheRepository.Team x |> Async.RunSynchronously)
-                let players = UpdatePlayerWhoScoredIds (MatchReport.updatePlayerIdsAsync CacheRepository.PlayerStatic CacheRepository.Team x |> Async.RunSynchronously)
-                let scores = PlayerScoreData.getDataForMatchReportAsync CacheRepository.PlayerScore CacheRepository.PlayerStatic CacheRepository.Fixture x |> Async.RunSynchronously
-                match team, players with
-                | Success _, Success _ -> printfn "\tDone updating team and players"
-                | Success _, Failure x -> printfn "\tTeam update Ok. Players not ok: %s" x
-                | Failure x, Success _ -> printfn "\tPlayer update Ok. Team not ok: %s" x
-                | Failure x, Failure y -> printfn "\tTeam update not Ok: %s\n\tPlayer update not Ok: %s" x y
-
-
-
-    let UpdatePlayerScoreData (id) =
-        let matchReport = MatchReport.downloadDataAsync id |> Async.RunSynchronously
-        match matchReport with 
-        | Failure x -> printfn "Could not download match report: %s" x
-        | Success x -> let team = UpdateTeamWhoScoredIds (MatchReport.updateTeamIdsAsync CacheRepository.Team x |> Async.RunSynchronously)
-                       let players = UpdatePlayerWhoScoredIds (MatchReport.updatePlayerIdsAsync CacheRepository.PlayerStatic CacheRepository.Team x |> Async.RunSynchronously)
-                       let scores = PlayerScoreData.getDataForMatchReportAsync CacheRepository.PlayerScore CacheRepository.PlayerStatic CacheRepository.Fixture x |> Async.RunSynchronously
-                       match scores with
-                       | Success _ -> printfn "\tDone updating player scores for FixtureId %i" id
-                       | Failure x -> printfn "\tFailed to update player score data: %s" x
+            UpdatePlayerScoreData (i) |> ignore
 
 
 
@@ -103,13 +75,6 @@ module TestRunners =
         | Failure x -> printfn "\tCould not update fixture data: %s" x
         | Success x -> CacheRepository.Fixture.Update()
                        printfn "\tDone updating fixture data."
-
-    let Initialize () = 
-//        UpdateTeams () |> ignore
-//        UpdateFixtures () |> ignore
-//        UpdatePlayers () |> ignore
-//        UpdateFixtureWhoScoredIds () |> ignore
-        UpdateTeamAndPlayerWhoScoredIds () |> ignore
         
         
         

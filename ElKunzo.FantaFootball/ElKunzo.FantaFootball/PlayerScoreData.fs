@@ -121,24 +121,22 @@ module PlayerScoreData =
 
     let mapPlayerData fixtureId (ownIncidentEvents:IDictionary<string,seq<IncidentEvent>>) (opponentIncidentEvents:IDictionary<string,seq<IncidentEvent>>) 
                       playerId (playerData:PlayerData) =
-        let getRed (incidentEvent:IncidentEvent) = incidentEvent.Qualifiers |> Seq.tryFind (fun x -> x.Type.DisplayName = "Red")
-        let getYellow (incidentEvent:IncidentEvent) = incidentEvent.Qualifiers |> Seq.tryFind (fun x -> x.Type.DisplayName = "Yellow")
-        let minutesPlayed = 
-            let substitutedOn = ownIncidentEvents.Item("SubstitutionOn") |> Seq.tryFind(fun x -> x.PlayerId = playerData.PlayerId)
-            let substitutedOff = ownIncidentEvents.Item("SubstitutionOff") |> Seq.tryFind(fun x -> x.PlayerId = playerData.PlayerId)
-            match substitutedOn with
-            | Some x -> 90 - x.Minute
-            | None -> match substitutedOff with
-                      | Some x -> x.Minute
-                      | None -> if playerData.IsFirstEleven then 90 else 0
-
+        let minutesOnPitch = 
+            let substitutedOn = ownIncidentEvents.Item("SubOn") |> Seq.tryFind(fun x -> x.PlayerId = playerData.PlayerId)
+            let substitutedOff = ownIncidentEvents.Item("SubOff") |> Seq.tryFind(fun x -> x.PlayerId = playerData.PlayerId)
+            match playerData.IsFirstEleven with
+            | true when substitutedOff.IsSome -> [| for i in 0 .. substitutedOff.Value.Minute do yield i |]
+            | true -> [| for i in 0 .. 90 do yield i |]
+            | false when substitutedOn.IsSome -> [| for i in (90 - substitutedOn.Value.Minute) .. 90 do yield i |]
+            | false -> [| 0 |]
+        let minutesPlayed = minutesOnPitch |> Array.length
         let goalsScored = ownIncidentEvents.Item("Goal") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
-        let assists = ownIncidentEvents.Item("Pass") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
-        let goalsConceded = opponentIncidentEvents.Item("Goal") |> Seq.filter (fun x -> x.Minute < minutesPlayed) |> Seq.length
-        let cleanSheet = goalsConceded = 0
+        let assists = ownIncidentEvents.Item("Assist") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId) |> Seq.length
+        let goalsConceded = opponentIncidentEvents.Item("Goal") |> Seq.filter (fun x -> Array.exists (fun m -> m = x.Minute) minutesOnPitch) |> Seq.length
+        let cleanSheet = (goalsConceded = 0) && (minutesPlayed > 60)
         let shotsSaved = if (isNull (box playerData.Stats.TotalSaves)) then 0 else playerData.Stats.TotalSaves |> Map.toSeq |> Seq.sumBy (fun (_,v) -> v) |> int
-        let yellowCards = ownIncidentEvents.Item("Card") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId && (getYellow x).IsSome) |> Seq.length
-        let redCards = ownIncidentEvents.Item("Card") |> Seq.filter(fun x -> x.PlayerId = playerData.PlayerId && (getRed x).IsSome) |> Seq.length
+        let yellowCards = ownIncidentEvents.Item("YellowCard") |> Seq.length
+        let redCard = ownIncidentEvents.Item("RedCard") |> Seq.length
                           
         {
             Id = -1;
@@ -154,82 +152,102 @@ module PlayerScoreData =
             PenaltiesMissed = 0;
             GoalsConceded = goalsConceded;
             YellowCards = yellowCards;
-            RedCard = redCards;
+            RedCard = redCard;
             OwnGoals = 0;
         }
 
 
 
     let calculateTotalPoints (player:T) (playerPosition:Position) = 
-        if player.MinutesPlayed = 0 then 0
-        else
-            let minutePoints = 
-                match player.MinutesPlayed with
-                | 0 -> 0
-                | _ when player.MinutesPlayed < 60 -> 1
-                | _ -> 2
+        let wasPlayerOnPitch = 
+            if player.MinutesPlayed = 0 then 0 else 1
 
-            let goalPoints = 
-                match playerPosition with
-                | Position.Goalkeeper | Position.Defender -> 6 * player.GoalsScored
-                | Position.Midfielder -> 5 * player.GoalsScored
-                | Position.Forward -> 4 * player.GoalsScored
-                | _ -> 0
+        let minutePoints = 
+            match player.MinutesPlayed with
+            | 0 -> 0
+            | _ when player.MinutesPlayed < 60 -> 1
+            | _ -> 2
 
-            let assistPoints = 
-                3 * player.Assists
+        let goalPoints = 
+            match playerPosition with
+            | Position.Goalkeeper | Position.Defender -> 6 * player.GoalsScored
+            | Position.Midfielder -> 5 * player.GoalsScored
+            | Position.Forward -> 4 * player.GoalsScored
+            | _ -> 0
 
-            let cleanSheetPoints = 
-                let cleanSheet = if player.CleanSheet then 1 else 0
-                match playerPosition with
-                | Position.Goalkeeper | Position.Defender -> 4 * cleanSheet
-                | Position.Midfielder -> 1 * cleanSheet
-                | Position.Forward -> 0
-                | _ -> 0
+        let assistPoints = 
+            3 * player.Assists
 
-            let savesPoints = 
-                match playerPosition with
-                | Position.Goalkeeper -> player.ShotsSaved / 3 
-                | _ -> 0
+        let cleanSheetPoints = 
+            let cleanSheet = if player.CleanSheet then 1 else 0
+            match playerPosition with
+            | Position.Goalkeeper | Position.Defender -> 4 * cleanSheet
+            | Position.Midfielder -> 1 * cleanSheet
+            | Position.Forward -> 0
+            | _ -> 0
 
-            let penaltySavePoints = 
-                player.PenaltiesSaved * 5
+        let savesPoints = 
+            match playerPosition with
+            | Position.Goalkeeper -> player.ShotsSaved / 3 
+            | _ -> 0
 
-            let penaltyMissedPoints = 
-                player.PenaltiesMissed * (-2)
+        let penaltySavePoints = 
+            player.PenaltiesSaved * 5
 
-            let goalsConcededPoints = 
-                match playerPosition with
-                | Position.Goalkeeper | Position.Defender -> (-1) * (player.GoalsConceded / 2)
-                | _ -> 0
+        let penaltyMissedPoints = 
+            player.PenaltiesMissed * (-2)
 
-            let yellowCardPoints = 
-                player.YellowCards * -1
+        let goalsConcededPoints = 
+            match playerPosition with
+            | Position.Goalkeeper | Position.Defender -> (-1) * (player.GoalsConceded / 2)
+            | _ -> 0
 
-            let redCardPoints = 
-                player.RedCard * -3
+        let yellowCardPoints = 
+            player.YellowCards * -1
 
-            let ownGoalPoints = 
-                player.OwnGoals * -2
+        let redCardPoints = 
+            player.RedCard * -3
 
-            let result = minutePoints + goalPoints + assistPoints + cleanSheetPoints + savesPoints + 
-                         penaltySavePoints + penaltyMissedPoints + goalsConcededPoints + yellowCardPoints + 
-                         redCardPoints + ownGoalPoints
+        let ownGoalPoints = 
+            player.OwnGoals * -2
 
-            result
+        let result = wasPlayerOnPitch * (minutePoints + goalPoints + assistPoints + cleanSheetPoints + savesPoints + 
+                        penaltySavePoints + penaltyMissedPoints + goalsConcededPoints + yellowCardPoints + 
+                        redCardPoints + ownGoalPoints)
+
+        result
 
 
 
     let getDataForMatchReportAsync (scoreCache:Cache) (playerCache:PlayerStaticData.Cache) (fixtureCache:FixtureData.Cache) (report:MatchReport) = async {
-        let getEvents (incidentEvents:seq<IncidentEvent>) = 
-            [ "Goal"; "Pass"; "SubstitutionOn"; "SubstitutionOff"; "Card" ]
-            |> Seq.map (fun d -> (d, (incidentEvents |> Seq.filter (fun e -> e.Type.DisplayName = d))))
+        let findEvent (incEvent:string) (incidentEvents:seq<IncidentEvent>) = 
+            incidentEvents |> Seq.filter (fun e -> e.Type.DisplayName = incEvent)
+
+        let findEventWithQualifier (incEvent:string) (incQualifier:string) (incidentEvents:seq<IncidentEvent>) = 
+            incidentEvents |> Seq.filter (fun e -> e.Type.DisplayName = incEvent && 
+                                                   (e.Qualifiers |> Seq.tryFind (fun x -> x.Type.DisplayName = incQualifier)).IsSome)
+
+        let getGoals (ownIncidentEvents:seq<IncidentEvent>) (opponentIncidentEvents:seq<IncidentEvent>) = 
+            let goals = ownIncidentEvents |> findEvent "Goal"
+                        |> Seq.filter (fun e -> (e.Qualifiers |> Seq.tryFind (fun x -> x.Type.DisplayName = "OwnGoal")).IsNone)
+            let opponentOwnGoals = opponentIncidentEvents |> findEventWithQualifier "Goal" "OwnGoal"
+            Seq.concat [| goals; opponentOwnGoals |]
+
+        let getEvents (opponentIncidentEvents:seq<IncidentEvent>) (ownIncidentEvents:seq<IncidentEvent>) = 
+            let goal = ("Goal", getGoals ownIncidentEvents opponentIncidentEvents)
+            let pass = ("Assist", ownIncidentEvents |> findEvent "Pass")
+            let subOn = ("SubOn", ownIncidentEvents |> findEvent "SubstitutionOn")
+            let subOff = ("SubOff", ownIncidentEvents |> findEvent "SubstitutionOff")
+            let yellowCard = ("YellowCard", ownIncidentEvents |> findEventWithQualifier "Card" "Yellow")
+            let redCard = ("RedCard", ownIncidentEvents |> findEventWithQualifier "Card" "Red")
+            
+            [ goal; pass; subOn; subOff; yellowCard; redCard ]
 
         let fixture = fixtureCache.PublicData |> Seq.find (fun x -> x.WhoScoredId = report.WhoScoredId)
 
-        let homeIncidentEvents = report.Home.IncidentEvents |> getEvents |> dict
+        let homeIncidentEvents = report.Home.IncidentEvents |> getEvents report.Away.IncidentEvents |> dict
 
-        let awayIncidentEvents = report.Away.IncidentEvents |> getEvents |> dict
+        let awayIncidentEvents = report.Away.IncidentEvents |> getEvents report.Home.IncidentEvents |> dict
         
         let homePlayerMapper (player:PlayerData) = 
             let internalPlayer = playerCache.PublicData |> Seq.tryFind (fun x -> x.WhoScoredId = player.PlayerId)

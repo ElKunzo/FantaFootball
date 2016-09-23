@@ -1,7 +1,6 @@
 ﻿namespace ElKunzo.FantaFootball
 
 open System
-open System.Threading
 
 open ElKunzo.FantaFootball.External.WhoScoredTypes
 open ElKunzo.FantaFootball.Internal
@@ -62,9 +61,6 @@ module WhoScoredCalendarData =
     let downloadDataAsync (baseUrl:string) (teamIdCache:TeamStaticData.Cache) (fixtureDataCache:FixtureData.Cache) (id:int) = 
         async {
             let url = String.Format(baseUrl, id)
-            //added sleep so that who scored does not block 
-            //due to DDOS prevention
-            Thread.Sleep(Common.genRandomNumber ())
             let! result = downloadAsync url buildDefaultHttpClient
 
             match result with 
@@ -90,7 +86,7 @@ module WhoScoredCalendarData =
             let resultList = possibleIds 
                              |> Seq.toList
                              |> List.map downloader
-                             |> Common.asyncThrottle 2
+                             |> Common.asyncThrottle 4
                              |> Async.Parallel
                              |> Async.RunSynchronously
             let successfullUpdates = resultList |> Seq.filter (fun r -> isSuccess r)

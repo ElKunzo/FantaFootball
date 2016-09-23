@@ -2,29 +2,23 @@
 
 open System.Threading
 
-open FSharp.Configuration
-
 open ElKunzo.FantaFootball
 open ElKunzo.FantaFootball.Internal
 
 module TestRunners = 
 
-//    type Settings = AppSettings<"App.config">
-//    let name = Settings.ConfigFileName
-
-
-
-    let UpdatePlayerScoreData (id) =
-        let matchReport = MatchReport.downloadDataAsync id |> Async.RunSynchronously
+    let UpdatePlayerScoreData id = async {
+        let! matchReport = MatchReport.downloadDataAsync id
         match matchReport with 
         | Failure x -> printfn "Could not download match report: %s" x
-        | Success x -> MatchReport.updateTeamIdsAsync CacheRepository.Team x |> Async.RunSynchronously |> ignore
+        | Success x -> do! MatchReport.updateTeamIdsAsync CacheRepository.Team x |> Async.Ignore
                        CacheRepository.Team.Update()
-                       MatchReport.updatePlayerIdsAsync CacheRepository.PlayerStatic CacheRepository.Team x |> Async.RunSynchronously |> ignore
+                       do! MatchReport.updatePlayerIdsAsync CacheRepository.PlayerStatic CacheRepository.Team x |> Async.Ignore
                        CacheRepository.PlayerStatic.Update()
-                       PlayerScoreData.getDataForMatchReportAsync CacheRepository.PlayerScore CacheRepository.PlayerStatic CacheRepository.Fixture x |> Async.RunSynchronously |> ignore
+                       do! PlayerScoreData.getDataForMatchReportAsync CacheRepository.PlayerScore CacheRepository.PlayerStatic CacheRepository.Fixture x |> Async.Ignore
                        CacheRepository.PlayerScore.Update()
                        printfn "\tDone game update for FixtureId %i: %s - %s" id x.Home.Name x.Away.Name
+    }
 
 
 
@@ -32,9 +26,12 @@ module TestRunners =
         printfn "Retreiving WhoScored.com match report...   "
         let playedFixtureIds = CacheRepository.Fixture.PublicData |> Seq.filter (fun x -> x.Status = FixtureStatus.Finished) |> Seq.map (fun x -> x.WhoScoredId)
 
-        for i in playedFixtureIds do
-            Thread.Sleep(2000)
-            UpdatePlayerScoreData (i) |> ignore
+        playedFixtureIds 
+        |> Seq.toList
+        |> List.map UpdatePlayerScoreData
+        |> Common.asyncThrottle 4
+        |> Async.Parallel
+        |> Async.RunSynchronously
 
 
 

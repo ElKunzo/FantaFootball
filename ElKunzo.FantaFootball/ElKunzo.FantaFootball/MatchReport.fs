@@ -16,8 +16,8 @@ module MatchReport =
     let parseMatchReport (jsonString:string) = 
         try
             let a = jsonString.Split([| "var matchCentreData = " |], StringSplitOptions.RemoveEmptyEntries).[1]
-            let b = a.Split([| "\"events\":" |], StringSplitOptions.None).[0]
-            let matchAndTeamData = b.Remove(b.Length - 1, 1) + "}"
+            let b = (a.Split([| "var matchCentreEventTypeJson =" |], StringSplitOptions.None).[0]).Trim()
+            let matchAndTeamData = b.Remove(b.Length - 1, 1)
             let result = JsonConvert.DeserializeObject<MatchReport>(matchAndTeamData)
             Success result
         with

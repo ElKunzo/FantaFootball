@@ -186,6 +186,8 @@ module WhoScoredTypes =
         PeriodCode : int;
         Home : TeamData;
         Away : TeamData;
+        CommonEvents : seq<IncidentEvent>;
+        Events : seq<IncidentEvent>;
         WhoScoredId : int;
     }
 

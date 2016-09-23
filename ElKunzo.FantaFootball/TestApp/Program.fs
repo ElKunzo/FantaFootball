@@ -9,7 +9,7 @@ let main argv =
     UpdatePlayers () |> ignore
     UpdateFixtureWhoScoredIds () |> ignore
     UpdateTeamAndPlayerWhoScoredIds () |> ignore
-//    UpdatePlayerScoreData (1115234)
+    //UpdatePlayerScoreData (1115237)
 
     printfn "Done!"
     let a = Console.ReadLine()

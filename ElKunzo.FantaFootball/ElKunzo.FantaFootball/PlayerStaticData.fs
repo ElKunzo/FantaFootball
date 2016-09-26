@@ -4,17 +4,10 @@ open System
 open System.Data
 open System.Data.Common
 open Microsoft.SqlServer.Server
-open Newtonsoft.Json
 
-open ElKunzo.FantaFootball
 open ElKunzo.FantaFootball.DataAccess
-open ElKunzo.FantaFootball.External.FootballDataTypes
 
 module PlayerStaticData = 
-
-    let urlTemplate = "http://api.football-data.org/v1/teams/{0}/players"
-
-
 
     type T = {
         Id : int;
@@ -30,19 +23,6 @@ module PlayerStaticData =
         ContractUntil : DateTime option;
         MarketValue : int option;
     }
-
-
-
-    type Cache (spName, mappingFunction, refreshInterval) =
-        inherit BaseCacheWithRefreshTimer<T>(spName, mappingFunction, refreshInterval)
-
-        override this.TryGetItem (id) = 
-            if this.IsOutdated() then this.Update()
-            this.PublicData |> Seq.tryFind (fun p -> p.Id = id)
-
-        member this.TryGetByWhoScoredId (id) = 
-            if this.IsOutdated() then this.Update()
-            this.PublicData |> Seq.tryFind (fun p -> p.WhoScoredId = id)
 
 
 
@@ -111,91 +91,22 @@ module PlayerStaticData =
 
 
 
-    let mapSinglePlayerFromExternal (playerCache:Cache) teamId footballDataTeamId (extPlayer:Player) = 
-        let mapPosition positionAsString = 
-            match positionAsString with
-            | "Keeper" -> Position.Goalkeeper
-            | "Right-Back" | "Left-Back" | "Centre Back" -> Position.Defender
-            | "Defensive Midfield" | "Central Midfield" | "Attacking Midfield" -> Position.Midfielder
-            | "Left Midfield" | "Right Midfield" | "Left Wing" | "Right Wing" -> Position.Midfielder
-            | "Centre Forward" | "Secondary Striker" -> Position.Forward
-            | _ -> Position.Unknown
-
-        let getName (extName:string) = 
-                extName.Split('\n').[0]
-
-        let isPlayerTheSame (internalPlayer:T) (externalPlayer:Player) =
-            internalPlayer.DateOfBirth = externalPlayer.DateOfBirth &&
-            internalPlayer.FullName = (externalPlayer.Name |> getName)
-
-        let mapJerseyNumber name numberAsString =
-            let opt = (mapNullString numberAsString)
-            match opt with
-            | None -> None
-            | Some x -> if name = "Luca Ceppitelli" then Some (23) else Some (int x)
-
-        let mapContractUntil contractUntilAsString = 
-            let opt = (mapNullString contractUntilAsString)
-            match opt with
-            | None -> None
-            | Some (x:string) -> let data = x.Split('-') |> Array.map (fun a -> int a)
-                                 Some (DateTime(data.[0], data.[1], data.[2]))
-
-        let internalId, whoScoredId = 
-            let knownPlayersForTeam = playerCache.PublicData |> Seq.filter (fun p -> p.TeamId = teamId)
-            let known = knownPlayersForTeam |> Seq.tryFind (fun p -> isPlayerTheSame p extPlayer)
-            match known with
-            | None -> (-1, -1)
-            | Some x -> (x.Id, x.WhoScoredId)
-
-        {
-            Id = internalId
-            WhoScoredId = whoScoredId;
-            FootballDataTeamId = footballDataTeamId;
-            TeamId = teamId;
-            JerseyNumber = (mapJerseyNumber (extPlayer.Name |> getName) extPlayer.JerseyNumber);
-            Position = (mapPosition extPlayer.Position);
-            Name = extPlayer.Name |> getName;
-            FullName = extPlayer.Name |> getName;
-            DateOfBirth = extPlayer.DateOfBirth;
-            Nationality = extPlayer.Nationality
-            ContractUntil = mapContractUntil extPlayer.ContractUntil;
-            MarketValue = (mapMarketValue extPlayer.MarketValue);
-        }
+    let Cache = BaseCacheWithRefreshTimer<T>("usp_PlayerStaticData_Get", mapFromSqlType, TimeSpan.FromMinutes(60.0))
 
 
-
-    let downloadDataForTeamAsync url = async {
-        let! result = downloadAsync url buildFootballDataApiHttpClient
-        match result with 
-        | Failure x -> return Failure x
-        | Success x -> let playerCollection = JsonConvert.DeserializeObject<PlayerCollection>(x)
-                       let footballDataTeamId = playerCollection._Links.Team.Href.Split('/') |> Seq.last |> int
-                       return Success (footballDataTeamId, playerCollection.Players)
+    
+    let persistAsync data = async {
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType data
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_Update" [| sqlParameter |]
     }
 
 
 
-    let mapFromExternal playerCache teamId playerData = 
-        match playerData with
-        | Failure x -> Failure x
-        | Success x -> let internalPlayers = (snd x) |> Seq.map (fun p -> mapSinglePlayerFromExternal playerCache teamId (fst x) p)
-                       Success internalPlayers
-        
-
-
-    let persistAsync spName internalPlayers = async {
-        match internalPlayers with 
-        | Failure x -> return Failure x
-        | Success x -> let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType x
-                       return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync spName [| sqlParameter |]
+    let persistWhoScoredAsync data = async {
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@PlayerData" mapToSqlType data
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_PlayerStaticData_InsertWhoScored" [| sqlParameter |]
     }
 
 
 
-    let updateDataForTeamAsync (playerCache:Cache) (team:TeamStaticData.T) = async {
-        return! String.Format(urlTemplate, team.FootballDataId)
-                |> downloadDataForTeamAsync |> Async.RunSynchronously
-                |> mapFromExternal playerCache team.Id
-                |> persistAsync "usp_PlayerStaticData_Update"
-    }
+    

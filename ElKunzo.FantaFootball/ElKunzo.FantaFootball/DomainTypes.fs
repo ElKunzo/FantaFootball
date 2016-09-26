@@ -13,3 +13,10 @@ module DomainTypes =
         match result with
         | Success x -> true
         | Failure x -> false
+
+
+
+    let getSuccessValue (result:OperationResult<'a,'b>) = 
+        match result with
+        | Success x -> Some x
+        | Failure x -> None

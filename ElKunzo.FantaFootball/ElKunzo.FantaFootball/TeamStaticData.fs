@@ -1,20 +1,14 @@
 ﻿namespace ElKunzo.FantaFootball.Internal
 
+open System
 open System.Data
 open System.Data.Common
 open Microsoft.SqlServer.Server
-open Newtonsoft.Json
 
-open ElKunzo.FantaFootball.DomainTypes
 open ElKunzo.FantaFootball.DataAccess
-open ElKunzo.FantaFootball.External.FootballDataTypes
 
 module TeamStaticData = 
 
-    let competitionUrl = "http://api.football-data.org/v1/competitions/438"
-
-
-    
     type T = {
         Id : int;
         FootballDataId : int;
@@ -25,15 +19,6 @@ module TeamStaticData =
         SquadMarketValue : int option;
         CrestUrl : string option;
     }
-
-
-
-    type Cache (spName, mappingFunction, refreshInterval) =
-        inherit BaseCacheWithRefreshTimer<T>(spName, mappingFunction, refreshInterval)
-
-        override this.TryGetItem (id) = 
-            if this.IsOutdated() then this.Update()
-            this.PublicData |> Seq.tryFind (fun t -> t.Id = id)
 
 
 
@@ -84,48 +69,13 @@ module TeamStaticData =
                 match team.CrestUrl with | Some x -> record.SetString(7, x) | None -> record.SetDBNull(7)
                 record)
 
-    
 
-    let mapFromExternal (cache:Cache) (extTeam:Team) = 
-        let footballDataId = extTeam._Links.Self.Href.Split('/') |> Seq.last |> int
-        let known = cache.PublicData |> Seq.tryFind (fun t -> t.FootballDataId = footballDataId)
 
-        {
-            Id = match known with | None -> -1 | Some x -> x.Id; 
-            FootballDataId = footballDataId;
-            WhoScoredId = match known with | None -> -1 | Some x -> x.WhoScoredId; 
-            Name = extTeam.ShortName;
-            FullName = extTeam.Name;
-            Code = (mapNullString extTeam.Code);
-            SquadMarketValue = (mapMarketValue extTeam.SquadMarketValue);
-            CrestUrl = (mapNullString extTeam.CrestUrl);
-        }
+    let Cache = BaseCacheWithRefreshTimer<T>("usp_TeamData_Get", mapFromSqlType, TimeSpan.FromMinutes(60.0));
 
 
 
-    let downloadDataAsync baseUrl = async {
-        let url = baseUrl + "/teams"
-        let! result = downloadAsync url buildFootballDataApiHttpClient
-            
-        match result with 
-            | Failure x -> return Failure x
-            | Success x -> 
-                try
-                    let comp = JsonConvert.DeserializeObject<Competition>(x)
-                    return Success comp.Teams
-                with
-                | ex -> return Failure ex.Message
-    }
-
-
-
-    let updateDataAsync teamCache = async {
-        let! teamData = downloadDataAsync competitionUrl
-
-        match teamData with
-        | Failure x -> return Failure x
-        | Success x -> 
-            let internalTeams = x |> Seq.map (fun t -> mapFromExternal teamCache t)
-            let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@TeamData" mapToSqlType internalTeams
-            return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_TeamData_Update" [| sqlParameter |]
+    let persistAsync data = async {
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@TeamData" mapToSqlType data
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_TeamData_Update" [| sqlParameter |]
     }

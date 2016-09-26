@@ -2,12 +2,12 @@
 
 open System
 open System.Data
-open System.Net
 open System.Net.Http
 open System.Collections.Generic
 open Microsoft.SqlServer.Server
 
 open ElKunzo.FantaFootball
+open ElKunzo.FantaFootball.FootballDataOrg
 open ElKunzo.FantaFootball.DataAccess.DatabaseDataAccess
 
 [<AutoOpen>]
@@ -33,7 +33,6 @@ module Common =
 
 
 
-    [<AbstractClass>]
     type BaseCacheWithRefreshTimer<'a>(_spName, _mappingFunction, _refreshInterval) =
         let mutable (Data:IReadOnlyList<'a>) = 
             let data = executeReadOnlyStoredProcedureAsync _spName _mappingFunction Array.empty |> Async.RunSynchronously
@@ -42,7 +41,8 @@ module Common =
             | Failure x -> failwith (sprintf "Could not load cahce data from DB: %s" x)
         let mutable TimeStampUtc = DateTime.UtcNow
 
-        member this.PublicData = 
+        member this.GetData = 
+            if this.IsOutdated() then this.Update()
             Data
         
         member this.IsOutdated () = 
@@ -57,8 +57,6 @@ module Common =
                 | Failure x -> failwith (sprintf "Could not load cahce data from DB: %s" x)
             Data <- data
             TimeStampUtc <- DateTime.UtcNow
-        
-        abstract member TryGetItem : int -> 'a option
 
     
 
@@ -78,9 +76,7 @@ module Common =
 
 
     let buildDefaultHttpClient () = 
-        //ServicePointManager.SecurityProtocol <- SecurityProtocolType.Tls12
         let client = new HttpClient()
-        //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/4.0 (Compatible; Windows NT 5.1; MSIE 6.0) (Compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)")
         client
 
 
@@ -103,20 +99,24 @@ module Common =
         with
         | ex -> return Failure ex.Message
     }
+    
+    
 
+    let persistWhoScoredIdAsync uspName data = async {
+        let mapIdTupleToSqlType ids = 
+            let metaData = [|
+                new SqlMetaData("Id", SqlDbType.Int);
+                new SqlMetaData("WhoScoredId", SqlDbType.Int);
+            |]
+            let record = new SqlDataRecord(metaData)
+            ids |> Seq.map (fun id ->
+                    record.SetInt32(0, fst id)
+                    record.SetInt32(1, snd id)
+                    record)
 
-
-    let mapIdTupleToSqlType (ids:seq<(int*int)>) = 
-        let metaData = [|
-            new SqlMetaData("Id", SqlDbType.Int);
-            new SqlMetaData("WhoScoredId", SqlDbType.Int);
-        |]
-
-        let record = new SqlDataRecord(metaData)
-        ids |> Seq.map (fun id ->
-                record.SetInt32(0, fst id)
-                record.SetInt32(1, snd id)
-                record)
+        let sqlParameter = createTableValuedParameter "@WhoScoredIdData" mapIdTupleToSqlType data
+        return! executeWriteOnlyStoredProcedureAsync uspName [| sqlParameter |]
+    }
 
 
 

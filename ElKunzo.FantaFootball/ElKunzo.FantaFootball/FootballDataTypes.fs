@@ -1,4 +1,4 @@
-﻿namespace ElKunzo.FantaFootball.External
+﻿namespace ElKunzo.FantaFootball.FootballDataOrg
 
 open System
 

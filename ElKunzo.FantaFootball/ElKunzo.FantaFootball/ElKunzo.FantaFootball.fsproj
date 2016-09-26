@@ -55,15 +55,18 @@
     <Compile Include="DomainTypes.fs" />
     <Compile Include="DatabaseDataAccess.fs" />
     <Compile Include="Common.fs" />
-    <Compile Include="FootballDataTypes.fs" />
-    <Compile Include="WhoScoredTypes.fs" />
     <Compile Include="TeamStaticData.fs" />
     <Compile Include="FixtureData.fs" />
-    <Compile Include="WhoScoredCalendarData.fs" />
     <Compile Include="PlayerStaticData.fs" />
     <Compile Include="PlayerScoreData.fs" />
-    <Compile Include="MatchReport.fs" />
-    <Compile Include="CacheRepository.fs" />
+    <Compile Include="FootballDataTypes.fs" />
+    <Compile Include="FootballDataDataHarvester.fs" />
+    <Compile Include="FootballDataMapper.fs" />
+    <Compile Include="FootballDataProcessor.fs" />
+    <Compile Include="WhoScoredTypes.fs" />
+    <Compile Include="WhoScoredDataHarvester.fs" />
+    <Compile Include="WhoScoredMapper.fs" />
+    <Compile Include="WhoScoredDataProcessor.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

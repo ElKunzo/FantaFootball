@@ -4,17 +4,10 @@ open System
 open System.Data
 open System.Data.Common
 open Microsoft.SqlServer.Server
-open Newtonsoft.Json
 
-open ElKunzo.FantaFootball.DomainTypes
 open ElKunzo.FantaFootball.DataAccess
-open ElKunzo.FantaFootball.External.FootballDataTypes
 
 module FixtureData = 
-
-    let competitionUrl = "http://api.football-data.org/v1/competitions/438"
-
-
 
     type T = {
         Id : int;
@@ -28,15 +21,6 @@ module FixtureData =
         HomeScore : int option;
         AwayScore : int option;
     }
-
-
-
-    type Cache (spName, mappingFunction, refreshInterval) =
-        inherit BaseCacheWithRefreshTimer<T>(spName, mappingFunction, refreshInterval)
-
-        override this.TryGetItem (id) = 
-            if this.IsOutdated() then this.Update()
-            this.PublicData |> Seq.tryFind (fun t -> t.Id = id)
 
 
 
@@ -97,68 +81,23 @@ module FixtureData =
 
 
 
-    let mapFromExternal (teamDataCache:TeamStaticData.Cache) (fixtureDataCache:Cache) (fixture:Fixture) = 
-        let mapTeamId (stringUrl:string) =
-            let footballDataId = stringUrl.Split('/') |> Seq.last |> int
-            let teamOption = teamDataCache.PublicData |> Seq.tryFind(fun t -> t.FootballDataId = footballDataId)
-            match teamOption with
-            | None -> failwith "Could not find participant team(s) in cache."
-            | Some x -> x.Id
-
-        let mapStatus s = 
-            match s with
-            | "SCHEDULED" -> FixtureStatus.Scheduled
-            | "TIMED" -> FixtureStatus.Timed
-            | "IN_PLAY" -> FixtureStatus.InPlay
-            | "FINISHED" -> FixtureStatus.Finished
-            | "POSTPONED" -> FixtureStatus.Postponed
-            | "CANCELED" -> FixtureStatus.Canceled
-            | _ -> failwith "Could not identify fixture stauts."
-
-        let footballDataFixtureId = 
-            fixture._Links.Self.Href.Split('/') |> Seq.last |> int
-
-        let mapScoreFromNullString scoreString = 
-            let s = mapNullString scoreString
-            match s with
-            | None -> None
-            | Some x -> Some (int x)
-
-        let known = fixtureDataCache.PublicData |> Seq.tryFind (fun t -> t.FootballDataId = footballDataFixtureId)
-
-        {
-            Id = match known with | None -> -1 | Some x -> x.Id;
-            WhoScoredId = -1;
-            FootballDataId = footballDataFixtureId ;
-            Status = (mapStatus fixture.Status);
-            KickOff = fixture.Date;
-            MatchDay = fixture.MatchDay;
-            HomeTeamId = mapTeamId fixture._Links.HomeTeam.Href;
-            AwayTeamId = mapTeamId fixture._Links.AwayTeam.Href;
-            HomeScore = mapScoreFromNullString fixture.Result.GoalsHomeTeam;
-            AwayScore = mapScoreFromNullString fixture.Result.GoalsAwayTeam;
-        }
+    let Cache = BaseCacheWithRefreshTimer<T>("usp_FixtureData_Get", mapFromSqlType, TimeSpan.FromMinutes(60.0));
 
 
 
-    let downloadDataAsync baseUrl = async {
-        let url = baseUrl + "/fixtures"
-        let! result = downloadAsync url buildFootballDataApiHttpClient
-
-        match result with 
-            | Failure x -> return Failure x
-            | Success x -> return Success (JsonConvert.DeserializeObject<SeasonFixtures>(x))
+    let persistAsync data = async {
+        let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@FixtureData" mapToSqlType data
+        return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_Update" [| sqlParameter |]
     }
 
 
-
-    let updateAsync teamCache fixtureCache = async {
-        let! externalFixtures = downloadDataAsync competitionUrl
-
-        match externalFixtures with
-        | Failure x -> return Failure x
-        | Success x -> let internalFixtures = x.Fixtures |> Seq.map (fun f -> mapFromExternal teamCache fixtureCache f)
-                       let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@FixtureData" mapToSqlType internalFixtures
-                       return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_Update" [| sqlParameter |]
-    }
+//    let updateAsync teamCache fixtureCache = async {
+//        let! externalFixtures = downloadDataAsync competitionUrl
+//
+//        match externalFixtures with
+//        | Failure x -> return Failure x
+//        | Success x -> let internalFixtures = x.Fixtures |> Seq.map (fun f -> mapFromExternal teamCache fixtureCache f)
+//                       let sqlParameter = DatabaseDataAccess.createTableValuedParameter "@FixtureData" mapToSqlType internalFixtures
+//                       return! DatabaseDataAccess.executeWriteOnlyStoredProcedureAsync "usp_FixtureData_Update" [| sqlParameter |]
+//    }
 

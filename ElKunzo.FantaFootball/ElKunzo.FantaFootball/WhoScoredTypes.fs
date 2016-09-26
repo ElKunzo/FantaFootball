@@ -169,6 +169,7 @@ module WhoScoredTypes =
     type MatchReport = {
         PlayerIdNameDictionary : Map<int, string>;
         PeriodMinuteLimits : Map<int, int>;
+        PeriodEndMinutes : Map<int, int>;
         TimeStamp : DateTime;
         RefereeName : string;
         Attendance : int;

@@ -1,6 +1,7 @@
 ﻿namespace ElKunzo.FantaFootball.WhoScoredCom
 
 open System
+open System.Threading
 open Newtonsoft.Json
 
 open ElKunzo.FantaFootball.DomainTypes
@@ -43,7 +44,7 @@ module DataHarvester =
         return! ids 
                 |> Seq.toList
                 |> List.map downloadMatchReportAsync
-                |> Common.asyncThrottle 4
+                |> Common.asyncThrottle 1
                 |> Async.Parallel
     }
         
@@ -52,6 +53,8 @@ module DataHarvester =
 
     let downloadPreMatchDataAsync (startingMatchId:int) (knwonIds:seq<int>) = async {
         let downloader (id:int) = async {
+                Thread.Sleep(1000)
+                printfn "Downloading %i" id
                 let url = String.Format(preMatchMatchDataUrlTemplate, id)
                 let! result = downloadAsync url buildDefaultHttpClient
                 return (id, result)
@@ -64,6 +67,6 @@ module DataHarvester =
         return! possibleIds 
                 |> Seq.toList
                 |> List.map downloader
-                |> Common.asyncThrottle 4
+                |> Common.asyncThrottle 1
                 |> Async.Parallel
     }

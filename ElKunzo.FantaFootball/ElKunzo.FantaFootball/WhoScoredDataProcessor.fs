@@ -22,7 +22,9 @@ module Processor =
                                 |> Seq.concat
                                 |> Common.persistWhoScoredIdAsync "usp_FixtureData_UpdateWhoScoredId"
                                 |> Async.RunSynchronously
-            
+        
+        FixtureData.Cache.Update ()
+        TeamStaticData.Cache.Update ()
 
         let teamIdUpdate = calendarData
                                 |> Seq.map (fun c -> Mapper.mapTeamIds c)
@@ -51,6 +53,11 @@ module Processor =
                                do! y |> fst |> Common.persistWhoScoredIdAsync "usp_PlayerStaticData_UpdateWhoScoredId" |> Async.Ignore
                                return Success "Done"
             }
+
+            FixtureData.Cache.Update ()
+            TeamStaticData.Cache.Update ()
+            PlayerStaticData.Cache.Update ()
+            PlayerScoreData.Cache.Update ()
 
             let! scoreUpdate = async {
                 match (Mapper.mapMatchReport x) with

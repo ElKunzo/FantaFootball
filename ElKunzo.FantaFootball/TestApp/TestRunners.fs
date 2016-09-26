@@ -18,8 +18,11 @@ module TestRunners =
         refreshCaches |> ignore
 
         let! teams = FootballDataOrg.Processor.processTeamsAsync
+        TeamStaticData.Cache.Update () |> ignore
         let! players = FootballDataOrg.Processor.processPlayersAsync
+        PlayerStaticData.Cache.Update () |> ignore
         let! fixtures = FootballDataOrg.Processor.processFixturesAsync
+        FixtureData.Cache.Update () |> ignore
         let! whoScoredIds = WhoScoredCom.Processor.processPreMatchFixturesAsync 1115149
 
         refreshCaches ()
@@ -50,8 +53,7 @@ module TestRunners =
     let UpdateMatchReportDataAsync () = async {
         refreshCaches ()
         let updateableFixtures = FixtureData.Cache.GetData 
-                                 |> Seq.filter (fun f -> f.WhoScoredId = 1115258)
-//                                 |> Seq.filter (fun f -> f.Status = FixtureStatus.Finished)
+                                 |> Seq.filter (fun f -> f.Status = FixtureStatus.Finished)
                                  |> Seq.map (fun x -> x.WhoScoredId)
 
         printfn "Found %i updateable fixtures..." (updateableFixtures |> Seq.length)

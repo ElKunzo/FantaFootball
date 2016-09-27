@@ -22,14 +22,17 @@ module Mapper =
                | null -> false
                | _ -> true
 
-        let getInternalPlayer teamId (availablePlayers:seq<PlayerStaticData.T>) (externalPlayer:PlayerData) = 
-            let foundByName = availablePlayers |> Seq.tryFind (fun p -> p.Name = externalPlayer.Name || p.FullName = externalPlayer.Name)
-            match foundByName with
-            | Some x -> Some (x.Id, externalPlayer.PlayerId)
-            | None -> let foundByTeamAndShirt = availablePlayers |> Seq.tryFind (fun p -> p.TeamId = teamId && compareJerseyNumber p.JerseyNumber externalPlayer.ShirtNo)
-                      match foundByTeamAndShirt with
-                      | None -> Some (-1, externalPlayer.PlayerId)
+        let getInternalPlayer teamId (externalPlayer:PlayerData) = 
+            let foundById = PlayerStaticData.Cache.GetData |> Seq.tryFind (fun p -> p.WhoScoredId = externalPlayer.PlayerId)
+            let foundByName = PlayerStaticData.Cache.GetData |> Seq.tryFind (fun p -> p.Name = externalPlayer.Name || p.FullName = externalPlayer.Name)
+            let foundByTeamAndShirt = PlayerStaticData.Cache.GetData |> Seq.tryFind (fun p -> p.TeamId = teamId && compareJerseyNumber p.JerseyNumber externalPlayer.ShirtNo)
+            match foundById with
+            | Some _ -> None //PlayerId already existing
+            | None -> match foundByName with
                       | Some x -> Some (x.Id, externalPlayer.PlayerId)
+                      | None -> match foundByTeamAndShirt with
+                                | None -> Some (-1, externalPlayer.PlayerId)
+                                | Some x -> Some (x.Id, externalPlayer.PlayerId)
 
         let mapPlayer (team:TeamStaticData.T) (externalPlayer:PlayerData) : PlayerStaticData.T = 
             let mapPosition (positionString:string) =
@@ -57,11 +60,10 @@ module Mapper =
 
         let getUpdateablePlayerIds teamId (externalPlayers:seq<PlayerData>) = 
             let team = TeamStaticData.Cache.GetData |> Seq.find (fun x -> x.WhoScoredId = teamId)
-            let updateablePlayers = PlayerStaticData.Cache.GetData |> Seq.filter (fun p -> p.WhoScoredId <> -1)
             let result = 
                 externalPlayers 
                 |> Seq.filter (fun externalPlayer -> wasPlayerOnPitch externalPlayer)
-                |> Seq.map (fun externalPlayer -> externalPlayer |> getInternalPlayer team.Id updateablePlayers)
+                |> Seq.map (fun externalPlayer -> externalPlayer |> getInternalPlayer team.Id)
             let intermediateResult = result |> Seq.filter (fun x -> x.IsSome) |> Seq.map (fun x -> x.Value) |> Seq.toArray
             let knownUpdateablePlayerIds = intermediateResult |> Seq.filter (fun (x, _) -> x <> -1)
             let unknownPlayers = intermediateResult |> Seq.filter (fun (x, _) -> x = -1) |> Seq.map (fun (_, id) -> externalPlayers |> Seq.find (fun x -> x.PlayerId = id) |> mapPlayer team)
@@ -268,47 +270,24 @@ module Mapper =
 
 
 
-//    let mapTeamIds (report:MatchReport) = 
-//        let getUpdateableTeam (updateableTeams:seq<TeamStaticData.T>) (teamdata:(int*string)) = 
-//            let id, name = teamdata
-//            let known = updateableTeams |> Seq.filter (fun t -> t.Name = name || t.FullName = name)
-//            match (known |> Seq.length) with
-//            | 1 -> let t = known |> Seq.head; 
-//                   if (t.WhoScoredId <> id) then Some (t.Id, id) else None
-//            | _ -> None
-//
-//        let missingIdTeams = TeamStaticData.Cache.GetData |> Seq.filter (fun t -> t.WhoScoredId = -1)
-//        if (missingIdTeams |> Seq.length = 0) then 
-//            Success Array.empty
-//        else
-//            let teamIds = [| (report.Home.TeamId, report.Home.Name); (report.Away.TeamId, report.Away.Name) |]
-//                          |> Array.map (fun x -> getUpdateableTeam missingIdTeams x)
-//                          |> Array.filter (fun x -> x.IsSome)
-//                          |> Array.map (fun x -> x.Value)
-//            Success teamIds
-
-
-
     let mapTeamIds data = 
-        let getUpdateableTeam (updateableTeams:seq<TeamStaticData.T>) (internalId, whoScoredId) = 
-            let known = updateableTeams |> Seq.filter (fun t -> t.Id = internalId)
+        let getUpdateableTeam (internalId, whoScoredId) =
+            TeamStaticData.Cache.Update () |> ignore
+            let known = TeamStaticData.Cache.GetData 
+                        |> Seq.filter (fun t -> t.WhoScoredId = -1)
+                        |> Seq.filter (fun t -> t.Id = internalId)
             match (known |> Seq.length) with
             | 1 -> let t = known |> Seq.head; 
                    if (t.WhoScoredId <> whoScoredId) then Some (t.Id, whoScoredId) else None
             | _ -> None
 
-        let missingIdTeams = TeamStaticData.Cache.GetData |> Seq.filter (fun t -> t.WhoScoredId = -1)
-
         match data with
         | Failure x -> Failure x
-        | Success x -> if (missingIdTeams |> Seq.length = 0) then 
-                            Success Array.empty
-                       else
-                            let teamIds = [| (x.InternalHomeId, x.WhoScoredHomeId); (x.InternalAwayId, x.WhoScoredAwayId) |]
-                                          |> Array.map (fun y -> getUpdateableTeam missingIdTeams y)
-                                          |> Array.filter (fun y -> y.IsSome)
-                                          |> Array.map (fun y -> y.Value)
-                            Success teamIds
+        | Success x -> let teamIds = [| (x.InternalHomeId, x.WhoScoredHomeId); (x.InternalAwayId, x.WhoScoredAwayId) |]
+                                     |> Array.map (fun y -> getUpdateableTeam y)
+                                     |> Array.filter (fun y -> y.IsSome)
+                                     |> Array.map (fun y -> y.Value)
+                       Success teamIds
 
 
 

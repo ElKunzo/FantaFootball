@@ -31,10 +31,13 @@ module Processor =
                                 |> Seq.filter (fun op -> isSuccess op)
                                 |> Seq.map (fun op -> (getSuccessValue op).Value)
                                 |> Seq.concat
-                                |> Common.persistWhoScoredIdAsync "usp_TeamData_UpdateWhoScoredId"
-                                |> Async.RunSynchronously
+                                |> Seq.toArray
 
-        return (fixtureIdUpdate, teamIdUpdate)
+        let a = teamIdUpdate 
+                |> Common.persistWhoScoredIdAsync "usp_TeamData_UpdateWhoScoredId"
+                |> Async.RunSynchronously
+
+        return (fixtureIdUpdate, a)
     }
 
 

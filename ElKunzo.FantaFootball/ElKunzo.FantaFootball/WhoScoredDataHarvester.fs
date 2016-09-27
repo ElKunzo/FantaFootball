@@ -53,7 +53,7 @@ module DataHarvester =
 
     let downloadPreMatchDataAsync (startingMatchId:int) (knwonIds:seq<int>) = async {
         let downloader (id:int) = async {
-                Thread.Sleep(1000)
+                Thread.Sleep(200)
                 printfn "Downloading %i" id
                 let url = String.Format(preMatchMatchDataUrlTemplate, id)
                 let! result = downloadAsync url buildDefaultHttpClient

@@ -8,7 +8,7 @@ open Microsoft.SqlServer.Server
 open ElKunzo.FantaFootball.DataAccess
 
 module PlayerStaticData = 
-
+    
     type T = {
         Id : int;
         WhoScoredId : int;
@@ -22,7 +22,7 @@ module PlayerStaticData =
         Nationality : string;
         ContractUntil : DateTime option;
         MarketValue : int option;
-    }
+    } 
 
 
 

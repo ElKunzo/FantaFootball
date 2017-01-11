@@ -53,7 +53,7 @@ module TestRunners =
     let UpdateMatchReportDataAsync () = async {
         refreshCaches ()
         let updateableFixtures = FixtureData.Cache.GetData 
-                                 |> Seq.filter (fun f -> f.Status = FixtureStatus.Finished)
+                                 |> Seq.filter (fun f -> f.Status = FixtureStatus.Finished && f.KickOff >= new System.DateTime(2016, 12, 20))
                                  |> Seq.map (fun x -> x.WhoScoredId)
 
         printfn "Found %i updateable fixtures..." (updateableFixtures |> Seq.length)
